@@ -8,15 +8,18 @@ RUN apt-get update && apt-get install -y python3 python3-venv curl --no-install-
     && curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
-# Copy package files for caching
+# Copy package files for caching. The set must match the workspaces array
+# in the root package.json, otherwise bun install fails on missing workspaces.
 COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/scraper/package.json ./packages/scraper/
 COPY packages/extractor/package.json ./packages/extractor/
 COPY packages/embedder/package.json ./packages/embedder/
+COPY apps/cdx-filter/package.json ./apps/cdx-filter/
 COPY apps/cli/package.json ./apps/cli/
+COPY apps/site/package.json ./apps/site/
 
-# Install TS dependencies (strip devDeps — biome/lefthook not needed in container)
+# Install TS dependencies (strip devDeps - biome/lefthook not needed in container)
 RUN python3 -c "import json; p=json.load(open('package.json')); p.pop('devDependencies',None); json.dump(p,open('package.json','w'),indent=2)"
 RUN bun install --ignore-scripts --no-frozen-lockfile
 
@@ -40,4 +43,7 @@ COPY packages/ ./packages/
 COPY apps/cli/ ./apps/cli/
 COPY scripts/ ./scripts/
 
-ENTRYPOINT ["tail", "-f", "/dev/null"]
+# Entrypoint matches the documented usage in README ("docker run ... <subcommand> [args]").
+# Invokes the CLI directly; `docker run docx-corpus` with no args shows `corpus --help`.
+ENTRYPOINT ["bun", "run", "/app/apps/cli/index.ts"]
+CMD ["--help"]

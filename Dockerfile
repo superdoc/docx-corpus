@@ -43,7 +43,9 @@ COPY packages/ ./packages/
 COPY apps/cli/ ./apps/cli/
 COPY scripts/ ./scripts/
 
-# Entrypoint matches the documented usage in README ("docker run ... <subcommand> [args]").
-# Invokes the CLI directly; `docker run docx-corpus` with no args shows `corpus --help`.
-ENTRYPOINT ["bun", "run", "/app/apps/cli/index.ts"]
-CMD ["--help"]
+# Container stays idle so operators can `docker exec` in to run CLI subcommands
+# or scripts (the backfill workflow uses this pattern). The README's
+# `docker run docx-corpus <subcommand>` invocation needs the user to override
+# the entrypoint explicitly:
+#   docker run --entrypoint bun docx-corpus run /app/apps/cli/index.ts scrape ...
+ENTRYPOINT ["tail", "-f", "/dev/null"]

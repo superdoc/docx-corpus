@@ -40,7 +40,7 @@ ${topics.map(t => `- [${t.label}](${absoluteUrl(routes.topic(t.id))}): ${t.count
 ## Links
 
 - Homepage: ${absoluteUrl(routes.home())}
-- GitHub: https://github.com/superdoc-dev/docx-corpus
+- GitHub: https://github.com/superdoc/docx-corpus
 - HuggingFace: https://huggingface.co/datasets/superdoc-dev/docx-corpus
 - API: https://api.docxcorp.us
 - Takedown requests: help@docxcorp.us

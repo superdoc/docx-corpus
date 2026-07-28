@@ -17,7 +17,7 @@ This page is for researchers deciding whether docx-corpus is fit for their task.
 
 ## Validation
 
-Every file that enters the corpus passes these checks (in [`packages/scraper/validation.ts`](https://github.com/superdoc-dev/docx-corpus/blob/main/packages/scraper/validation.ts)):
+Every file that enters the corpus passes these checks (in [`packages/scraper/validation.ts`](https://github.com/superdoc/docx-corpus/blob/main/packages/scraper/validation.ts)):
 
 1. Minimum size: at least 100 bytes.
 2. ZIP magic bytes: starts with `PK\x03\x04`.

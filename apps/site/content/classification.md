@@ -15,7 +15,7 @@ secondaryQueries:
 
 docx-corpus uses a two-dimensional taxonomy. Every classified document has one document_type label (its form/structure) and one document_topic label (its subject domain). The labels are independent; a `legal` document can have any topic, and a `government` topic can have any document_type.
 
-Taxonomy version: `docx-corpus-v2` (2.0.0). Source: [scripts/classification/taxonomy.json](https://github.com/superdoc-dev/docx-corpus/blob/main/scripts/classification/taxonomy.json).
+Taxonomy version: `docx-corpus-v2` (2.0.0). Source: [scripts/classification/taxonomy.json](https://github.com/superdoc/docx-corpus/blob/main/scripts/classification/taxonomy.json).
 
 ## Document types (10)
 
@@ -114,7 +114,7 @@ See [/quality](/quality) for confidence distributions and the rest of the datase
 
 ## Reproducing this
 
-Code in [scripts/classification/](https://github.com/superdoc-dev/docx-corpus/tree/main/scripts/classification). Run order: `sample.py` -> `label.py` -> `train.py` -> `classify.py`. Pipeline notes in [CLAUDE.md](https://github.com/superdoc-dev/docx-corpus/blob/main/scripts/classification/CLAUDE.md).
+Code in [scripts/classification/](https://github.com/superdoc/docx-corpus/tree/main/scripts/classification). Run order: `sample.py` -> `label.py` -> `train.py` -> `classify.py`. Pipeline notes in [CLAUDE.md](https://github.com/superdoc/docx-corpus/blob/main/scripts/classification/CLAUDE.md).
 
 ---
 

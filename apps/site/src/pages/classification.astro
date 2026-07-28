@@ -47,7 +47,7 @@ const description = 'Two-dimensional taxonomy of 10 document types and 9 topics.
   <section class="prose">
     <div class="section-label">How labels are produced</div>
     <p>We follow the <a href="https://huggingface.co/spaces/HuggingFaceFW/blogpost-fineweb-v1">FineWeb-Edu</a> pattern: sample a small, stratified set of documents across the five most-common languages, label each with an LLM, then train a lightweight multilingual text classifier on those labels and apply it at scale.</p>
-    <p>The classifier is a fine-tuned XLM-RoBERTa, trained on roughly 3,500 LLM-labeled examples. Two independent classifiers are trained, one per dimension. Code is open: see the <a href="https://github.com/superdoc-dev/docx-corpus/tree/main/scripts/classification">classification scripts</a> on GitHub.</p>
+    <p>The classifier is a fine-tuned XLM-RoBERTa, trained on roughly 3,500 LLM-labeled examples. Two independent classifiers are trained, one per dimension. Code is open: see the <a href="https://github.com/superdoc/docx-corpus/tree/main/scripts/classification">classification scripts</a> on GitHub.</p>
   </section>
 
   <section class="prose">

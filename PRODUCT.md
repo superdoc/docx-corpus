@@ -14,7 +14,7 @@ public web for research and testing.
 
 ## What it does not own
 
-- SuperDoc rendering, editing, or public API behavior.
+- Document rendering, editing, or application API behavior.
 - Repairing every malformed DOCX or defining how Word should interpret it.
 - Product workflows built by corpus consumers.
 
@@ -22,4 +22,4 @@ public web for research and testing.
 
 - Keep every pipeline stage reproducible and safe to rerun.
 - Preserve failures and duplicates as distinct outcomes instead of hiding them.
-- Make the corpus useful across document-processing tools, not only SuperDoc.
+- Make the corpus useful across document-processing tools.

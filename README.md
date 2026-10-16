@@ -5,11 +5,9 @@
 <h1 align="center">docx-corpus</h1>
 
 <p align="center">
-  Every Word document on the public web. Classified and open.
+  736K+ real Word documents from the public web, classified and open.
   <br>
-  736K+ real <code>.docx</code> files, labeled with 10 document types and 9 topics across 75 languages.
-  <br>
-  <a href="https://docxcorp.us">docxcorp.us</a> · <a href="https://huggingface.co/datasets/superdoc-dev/docx-corpus">Hugging Face</a> · <a href="https://api.docxcorp.us/stats">API</a>
+  Built by <a href="https://superdoc.dev">SuperDoc</a> · <a href="https://docxcorp.us">docxcorp.us</a> · <a href="https://huggingface.co/datasets/superdoc-dev/docx-corpus">Hugging Face</a> · <a href="https://api.docxcorp.us/stats">API</a>
 </p>
 
 <p align="center">
@@ -132,4 +130,4 @@ If you own a document and want it removed, email [help@docxcorp.us](mailto:help@
 
 ## License
 
-MIT. Built by [SuperDoc](https://superdoc.dev).
+MIT

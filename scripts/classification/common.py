@@ -69,30 +69,6 @@ def fetch_documents_text_parallel(
     return results
 
 
-def get_extraction_stats_by_language() -> list[dict]:
-    """Get document counts per language for extracted docs."""
-    conn = get_db_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute("""
-                SELECT
-                    language,
-                    COUNT(*)::int as count,
-                    ROUND(AVG(word_count))::int as avg_words
-                FROM documents
-                WHERE extracted_at IS NOT NULL
-                  AND extraction_error IS NULL
-                  AND language IS NOT NULL
-                ORDER BY count DESC
-            """)
-            return [
-                {"language": row[0], "count": row[1], "avg_words": row[2]}
-                for row in cur.fetchall()
-            ]
-    finally:
-        conn.close()
-
-
 def save_labels_to_db(labels: list[dict], batch_size: int = 500) -> int:
     """
     Save classification labels to the database.

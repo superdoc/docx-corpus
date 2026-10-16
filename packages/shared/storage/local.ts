@@ -1,5 +1,5 @@
-import { join, dirname } from "node:path";
 import { mkdir } from "node:fs/promises";
+import { dirname, join } from "node:path";
 import type { Storage } from "./types";
 
 /**
@@ -16,13 +16,6 @@ export function createLocalStorage(basePath: string): Storage {
 
     async exists(key: string): Promise<boolean> {
       return Bun.file(join(basePath, key)).exists();
-    },
-
-    async *list(prefix: string): AsyncIterable<string> {
-      const glob = new Bun.Glob(`${prefix}**/*`);
-      for await (const path of glob.scan(basePath)) {
-        yield path;
-      }
     },
 
     async write(key: string, content: Uint8Array | string): Promise<void> {

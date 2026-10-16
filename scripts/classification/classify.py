@@ -22,9 +22,7 @@ import math
 import os
 import sys
 import time
-from pathlib import Path
 
-import numpy as np
 import torch
 from tqdm import tqdm
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
@@ -32,7 +30,6 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from common import (
     fetch_documents_text_parallel,
     get_db_connection,
-    load_taxonomy,
     save_labels_to_db,
 )
 

@@ -1,7 +1,6 @@
 import {
   GetObjectCommand,
   HeadObjectCommand,
-  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
@@ -47,23 +46,6 @@ export function createR2Storage(config: R2Config): Storage {
         }
         throw err;
       }
-    },
-
-    async *list(prefix: string): AsyncIterable<string> {
-      let continuationToken: string | undefined;
-      do {
-        const response = await client.send(
-          new ListObjectsV2Command({
-            Bucket: bucket,
-            Prefix: prefix,
-            ContinuationToken: continuationToken,
-          }),
-        );
-        for (const obj of response.Contents || []) {
-          if (obj.Key) yield obj.Key;
-        }
-        continuationToken = response.NextContinuationToken;
-      } while (continuationToken);
     },
 
     async write(key: string, content: Uint8Array | string): Promise<void> {

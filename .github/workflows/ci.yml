@@ -30,6 +30,9 @@ jobs:
       - name: Test
         run: bun test --coverage --coverage-reporter=lcov
 
+      - name: Test (Python WARC fixer)
+        run: python3 scripts/test_fix_trailing_warc_bytes.py
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
 
@@ -38,6 +41,9 @@ jobs:
 
       - name: Type check (site)
         run: bun run --cwd apps/site typecheck
+
+      - name: Type check (api)
+        run: bun install --cwd apps/api --frozen-lockfile && bun run --cwd apps/api typecheck
 
       - name: Build (site)
         env:

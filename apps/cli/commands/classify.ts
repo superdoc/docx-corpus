@@ -1,5 +1,5 @@
 import { loadConfig } from "@docx-corpus/scraper";
-import { createDb, header, section, keyValue, blank } from "@docx-corpus/shared";
+import { blank, createDb, header, keyValue, section } from "@docx-corpus/shared";
 import { resolve } from "path";
 
 interface ParsedFlags {
@@ -9,7 +9,6 @@ interface ParsedFlags {
   modal: boolean;
   workers: number;
   gpu: string;
-  verbose: boolean;
 }
 
 function parseFlags(args: string[]): ParsedFlags {
@@ -20,7 +19,6 @@ function parseFlags(args: string[]): ParsedFlags {
     modal: false,
     workers: 20,
     gpu: "a10g",
-    verbose: false,
   };
 
   for (let i = 0; i < args.length; i++) {
@@ -55,10 +53,6 @@ function parseFlags(args: string[]): ParsedFlags {
         flags.gpu = next || flags.gpu;
         i++;
         break;
-      case "--verbose":
-      case "-v":
-        flags.verbose = true;
-        break;
     }
   }
 
@@ -82,7 +76,6 @@ Options
   --modal                  Run on Modal cloud GPUs
   --workers, -w <n>        Modal parallel workers (default: 20)
   --gpu <type>             Modal GPU type (default: a10g)
-  --verbose, -v            Show detailed output
   --help, -h               Show this help
 
 Setup

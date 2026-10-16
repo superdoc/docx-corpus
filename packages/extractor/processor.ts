@@ -1,8 +1,8 @@
 import { mkdir, rm } from "node:fs/promises";
-import { join, basename, dirname } from "node:path";
 import { tmpdir } from "node:os";
-import type { ExtractConfig, ExtractedDocument } from "./types";
-import { formatProgress, writeMultiLineProgress, type DocumentRecord } from "@docx-corpus/shared";
+import { dirname, join } from "node:path";
+import { type DocumentRecord, formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
+import type { ExtractConfig } from "./types";
 
 const PYTHON_DIR = join(dirname(import.meta.path), "python");
 const PYTHON_PATH = join(PYTHON_DIR, ".venv", "bin", "python");
@@ -125,7 +125,7 @@ export async function processDirectory(
   config: ExtractConfig,
   verbose: boolean = false,
 ): Promise<void> {
-  const { db, storage, inputPrefix, outputPrefix, batchSize } = config;
+  const { db, outputPrefix, batchSize } = config;
 
   // Get extraction stats from database
   const stats = await db.getExtractionStats();
@@ -279,9 +279,9 @@ async function processBatch(
 
   // Worker function - each worker uses its own extractor
   const processWorker = async (extractor: PersistentExtractor): Promise<void> => {
-    let doc: DocumentRecord | undefined;
-    while ((doc = getNextDocument()) && !stalled) {
-      const currentDoc = doc; // Capture for closure
+    while (!stalled) {
+      const currentDoc = getNextDocument();
+      if (!currentDoc) break;
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
       try {

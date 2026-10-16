@@ -9,7 +9,6 @@ const sql = neon(DATABASE_URL);
 
 export interface TypeFacet { id: string; label: string; count: number; }
 export interface TopicFacet { id: string; label: string; count: number; }
-export interface LanguageFacet { code: string; name: string; count: number; }
 
 export const TYPE_LABELS: Record<string, string> = {
   legal: 'Legal',
@@ -150,18 +149,6 @@ export async function getTopicFacets(): Promise<TopicFacet[]> {
     ORDER BY count DESC
   ` as { id: string; count: number }[];
   return rows.map(r => ({ id: r.id, label: TOPIC_LABELS[r.id] ?? r.id, count: r.count }));
-}
-
-export async function getTopLanguages(limit = 20): Promise<LanguageFacet[]> {
-  const rows = await sql`
-    SELECT language AS code, COUNT(*)::int AS count
-    FROM documents
-    WHERE document_type IS NOT NULL AND language IS NOT NULL
-    GROUP BY language
-    ORDER BY count DESC
-    LIMIT ${limit}
-  ` as { code: string; count: number }[];
-  return rows.map(r => ({ code: r.code, name: r.code, count: r.count }));
 }
 
 // Sample documents for a single type/topic facet. Ordered by confidence

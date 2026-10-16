@@ -1,3 +1,3 @@
+export { type ExtractorConfig, hasCloudflareCredentials, loadExtractorConfig } from "./config";
 export { processDirectory } from "./processor";
-export type { ExtractConfig, ExtractedDocument } from "./types";
-export { loadExtractorConfig, hasCloudflareCredentials, type ExtractorConfig } from "./config";
+export type { ExtractConfig } from "./types";

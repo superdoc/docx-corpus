@@ -5,6 +5,11 @@ interface Env {
   CORS_ORIGIN: string;
 }
 
+interface Facet {
+  id: string;
+  count: number;
+}
+
 interface DocumentRow {
   id: string;
   filename: string | null;
@@ -173,30 +178,33 @@ async function handleStats(env: Env, origin: string): Promise<Response> {
   ]);
 
   const hero = heroRows[0];
-  const totalClassified = typeRows.reduce((s: number, t: { count: number }) => s + t.count, 0);
+  const types = typeRows as Facet[];
+  const topics = topicRows as Facet[];
+  const languages = langRows as { code: string; count: number }[];
+  const totalClassified = types.reduce((s, t) => s + t.count, 0);
 
   return json(
     {
       hero: {
         total_documents: hero.total,
         languages: hero.languages,
-        types: typeRows.length,
-        topics: topicRows.length,
+        types: types.length,
+        topics: topics.length,
         avg_confidence: hero.avg_confidence,
       },
-      types: typeRows.map((t: { id: string; count: number }) => ({
+      types: types.map((t) => ({
         id: t.id,
         label: TYPE_LABELS[t.id] || t.id,
         count: t.count,
         percentage: Math.round((1000 * t.count) / totalClassified) / 10,
       })),
-      topics: topicRows.map((t: { id: string; count: number }) => ({
+      topics: topics.map((t) => ({
         id: t.id,
         label: TOPIC_LABELS[t.id] || t.id,
         count: t.count,
         percentage: Math.round((1000 * t.count) / totalClassified) / 10,
       })),
-      languages: langRows.map((l: { code: string; count: number }) => ({
+      languages: languages.map((l) => ({
         code: l.code,
         name: LANG_NAMES[l.code] || l.code,
         count: l.count,
@@ -211,73 +219,34 @@ async function handleStats(env: Env, origin: string): Promise<Response> {
 
 // ---------- shared filter builder ----------
 
-function buildFilters(url: URL): { where: string; params: unknown[]; paramIndex: number } {
-  const type = url.searchParams.get("type") || "";
-  const topic = url.searchParams.get("topic") || "";
-  const lang = url.searchParams.get("lang") || "";
-  const minConf = parseFloat(url.searchParams.get("min_confidence") || "0");
+const FILTER_COLUMNS = {
+  type: "document_type",
+  topic: "document_topic",
+  lang: "language",
+} as const;
 
+// `exclude` drops one dimension so its facet counts stay visible for every option.
+function buildFilters(
+  url: URL,
+  exclude?: keyof typeof FILTER_COLUMNS,
+): { where: string; params: unknown[]; paramIndex: number } {
   const conditions: string[] = ["document_type IS NOT NULL"];
   const params: unknown[] = [];
-  let paramIndex = 1;
 
-  if (type) {
-    conditions.push(`document_type = $${paramIndex}`);
-    params.push(type);
-    paramIndex++;
+  for (const [param, column] of Object.entries(FILTER_COLUMNS)) {
+    const value = param === exclude ? "" : url.searchParams.get(param);
+    if (value) {
+      params.push(value);
+      conditions.push(`${column} = $${params.length}`);
+    }
   }
-  if (topic) {
-    conditions.push(`document_topic = $${paramIndex}`);
-    params.push(topic);
-    paramIndex++;
-  }
-  if (lang) {
-    conditions.push(`language = $${paramIndex}`);
-    params.push(lang);
-    paramIndex++;
-  }
-  if (minConf > 0) {
-    conditions.push(`classification_confidence >= $${paramIndex}`);
-    params.push(minConf);
-    paramIndex++;
-  }
-
-  return { where: conditions.join(" AND "), params, paramIndex };
-}
-
-// Build filters excluding one dimension (for facet counts)
-function buildFiltersExcluding(url: URL, exclude: string): { where: string; params: unknown[] } {
-  const type = exclude === "type" ? "" : url.searchParams.get("type") || "";
-  const topic = exclude === "topic" ? "" : url.searchParams.get("topic") || "";
-  const lang = exclude === "lang" ? "" : url.searchParams.get("lang") || "";
   const minConf = parseFloat(url.searchParams.get("min_confidence") || "0");
-
-  const conditions: string[] = ["document_type IS NOT NULL"];
-  const params: unknown[] = [];
-  let i = 1;
-
-  if (type) {
-    conditions.push(`document_type = $${i}`);
-    params.push(type);
-    i++;
-  }
-  if (topic) {
-    conditions.push(`document_topic = $${i}`);
-    params.push(topic);
-    i++;
-  }
-  if (lang) {
-    conditions.push(`language = $${i}`);
-    params.push(lang);
-    i++;
-  }
   if (minConf > 0) {
-    conditions.push(`classification_confidence >= $${i}`);
     params.push(minConf);
-    i++;
+    conditions.push(`classification_confidence >= $${params.length}`);
   }
 
-  return { where: conditions.join(" AND "), params };
+  return { where: conditions.join(" AND "), params, paramIndex: params.length + 1 };
 }
 
 // ---------- /documents ----------
@@ -291,9 +260,9 @@ async function handleDocuments(url: URL, env: Env, origin: string): Promise<Resp
     const { where, params, paramIndex } = buildFilters(url);
 
     // Facet queries: exclude own dimension so all options remain visible with counts
-    const typeFacet = buildFiltersExcluding(url, "type");
-    const topicFacet = buildFiltersExcluding(url, "topic");
-    const langFacet = buildFiltersExcluding(url, "lang");
+    const typeFacet = buildFilters(url, "type");
+    const topicFacet = buildFilters(url, "topic");
+    const langFacet = buildFilters(url, "lang");
 
     const [countResult, rows, typeCounts, topicCounts, langCounts] = await Promise.all([
       sql.query(`SELECT COUNT(*)::int AS total FROM documents WHERE ${where}`, params),

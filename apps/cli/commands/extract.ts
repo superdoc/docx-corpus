@@ -1,8 +1,8 @@
 import {
-  processDirectory,
-  loadExtractorConfig,
-  hasCloudflareCredentials,
   type ExtractConfig,
+  hasCloudflareCredentials,
+  loadExtractorConfig,
+  processDirectory,
 } from "@docx-corpus/extractor";
 import { createDb, createLocalStorage, createR2Storage } from "@docx-corpus/shared";
 

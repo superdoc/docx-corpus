@@ -1,19 +1,18 @@
 # @docx-corpus/shared
 
-Shared utilities used by all TypeScript packages. This is the foundation layer — every TS package depends on it.
+Shared utilities for the Bun pipeline (scraper, extractor, embedder, CLI). The API, site, and Lambda do not use it.
 
 ## What's here
 
-- **`db.ts`** — `DbClient` interface and `createDb()` factory. Uses `Bun.sql` (not pg/postgres.js). All pipeline stages (scrape, extract, embed, classify) read/write through this client.
-- **`storage.ts`** — `Storage` interface with `createR2Storage()` and `createLocalStorage()`. Abstracts Cloudflare R2 vs local filesystem.
+- **`db.ts`** — `DbClient` interface and `createDb()` factory. Uses `Bun.sql` (not pg/postgres.js). Scrape, extract, and embed write through this client; `classify` only reads stats (Python writes the labels).
+- **`storage/`** — `Storage` interface with `createR2Storage()` and `createLocalStorage()`. Abstracts Cloudflare R2 vs local filesystem.
 - **`ui.ts`** — Terminal formatting helpers (progress bars, headers, multi-line progress).
 - **`index.ts`** — Barrel exports.
 
 ## Key types
 
 - `DocumentRecord` — the full row from the `documents` table. Every pipeline stage adds columns to this.
-- `DbClient` — interface with methods grouped by pipeline stage (scraping, extraction, embedding, classification).
-- `LLMClassificationData` — `{ id, documentType, documentTopic, confidence, model }` for the classification pipeline.
+- `DbClient` — interface with methods grouped by pipeline stage (scraping, extraction, embedding, stats).
 
 ## When modifying
 

@@ -6,8 +6,6 @@ export interface Config {
     maxRps: number;
     minRps: number;
     timeoutMs: number;
-    maxRetries: number;
-    maxBackoffMs: number;
   };
   storage: {
     localPath: string;
@@ -34,8 +32,6 @@ export function loadConfig(): Config {
       maxRps: parseInt(env.MAX_RPS || "", 10) || 5,
       minRps: parseInt(env.MIN_RPS || "", 10) || 1,
       timeoutMs: parseInt(env.TIMEOUT_MS || "", 10) || 45000,
-      maxRetries: parseInt(env.MAX_RETRIES || "", 10) || 5,
-      maxBackoffMs: parseInt(env.MAX_BACKOFF_MS || "", 10) || 60000,
     },
     storage: {
       localPath: env.STORAGE_PATH || "./corpus",

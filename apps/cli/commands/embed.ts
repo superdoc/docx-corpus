@@ -1,9 +1,9 @@
 import {
-  processEmbeddings,
-  loadEmbedderConfig,
+  type EmbedConfig,
   hasCloudflareCredentials,
   hasGoogleCredentials,
-  type EmbedConfig,
+  loadEmbedderConfig,
+  processEmbeddings,
 } from "@docx-corpus/embedder";
 import { createDb, createLocalStorage, createR2Storage } from "@docx-corpus/shared";
 
@@ -114,7 +114,6 @@ export async function runEmbed(args: string[]) {
     db,
     storage,
     inputPrefix: envConfig.embed.inputPrefix,
-    model: "google",
     batchSize: flags.batchSize ?? 1000000,
     concurrency: envConfig.embed.concurrency,
   };

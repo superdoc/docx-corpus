@@ -1,48 +1,5 @@
 import { describe, expect, test } from "bun:test";
-
-interface ParsedFlags {
-  crawlIds?: string[];
-  crawlCount?: number;
-  verbose?: boolean;
-  force?: boolean;
-  retryFailed?: boolean;
-}
-
-function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {};
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    if (arg === "--crawl" && args[i + 1]) {
-      const value = args[++i];
-      // Bare number = count of latest crawls
-      if (/^\d+$/.test(value)) {
-        flags.crawlCount = parseInt(value, 10);
-        flags.crawlIds = undefined;
-      } else if (value.includes(",")) {
-        // Comma-separated list - filter empty segments
-        flags.crawlIds = value
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-        flags.crawlCount = undefined;
-      } else {
-        // Single crawl ID
-        flags.crawlIds = [value];
-        flags.crawlCount = undefined;
-      }
-    } else if (arg === "--verbose" || arg === "-v") {
-      flags.verbose = true;
-    } else if (arg === "--force" || arg === "-f") {
-      flags.force = true;
-    } else if (arg === "--retry-failed") {
-      flags.retryFailed = true;
-    }
-  }
-
-  return flags;
-}
+import { parseFlags } from "./commands/scrape";
 
 describe("parseFlags", () => {
   describe("--crawl with number (latest N crawls)", () => {

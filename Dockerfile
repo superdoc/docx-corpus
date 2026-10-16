@@ -43,9 +43,5 @@ COPY packages/ ./packages/
 COPY apps/cli/ ./apps/cli/
 COPY scripts/ ./scripts/
 
-# Container stays idle so operators can `docker exec` in to run CLI subcommands
-# or scripts (the backfill workflow uses this pattern). The README's
-# `docker run docx-corpus <subcommand>` invocation needs the user to override
-# the entrypoint explicitly:
-#   docker run --entrypoint bun docx-corpus run /app/apps/cli/index.ts scrape ...
+# Idle so operators can `docker exec` in for long runs (see README).
 ENTRYPOINT ["tail", "-f", "/dev/null"]

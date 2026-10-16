@@ -1,15 +1,14 @@
 #!/usr/bin/env bun
 
-import { runScrape } from "./commands/scrape";
-import { runExtract } from "./commands/extract";
-import { runEmbed } from "./commands/embed";
+import { runCdxFilter } from "./commands/cdx-filter";
 import { runClassify } from "./commands/classify";
 import { runCrawls } from "./commands/crawls";
-import { runCdxFilter } from "./commands/cdx-filter";
+import { runEmbed } from "./commands/embed";
 import { runExport } from "./commands/export";
+import { runExtract } from "./commands/extract";
+import { runScrape } from "./commands/scrape";
 import { runStatus } from "./commands/status";
-
-const VERSION = "0.1.0";
+import { version as VERSION } from "./package.json";
 
 const HELP = `
 corpus v${VERSION}

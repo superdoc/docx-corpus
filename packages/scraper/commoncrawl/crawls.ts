@@ -1,4 +1,4 @@
-import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import type { Config } from "../config";
 
 export interface FilteredCrawl {

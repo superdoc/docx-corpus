@@ -1,8 +1,8 @@
-export { processEmbeddings } from "./processor";
-export type { EmbedConfig, EmbeddedDocument, EmbeddingModel } from "./types";
 export {
-  loadEmbedderConfig,
+  type EmbedderConfig,
   hasCloudflareCredentials,
   hasGoogleCredentials,
-  type EmbedderConfig,
+  loadEmbedderConfig,
 } from "./config";
+export { processEmbeddings } from "./processor";
+export type { EmbedConfig } from "./types";

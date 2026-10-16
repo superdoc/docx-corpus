@@ -1,7 +1,7 @@
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
-import { createGunzip } from "zlib";
-import { Readable, Transform } from "stream";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { type Readable, Transform } from "stream";
 import { pipeline } from "stream/promises";
+import { createGunzip } from "zlib";
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 

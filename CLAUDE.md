@@ -10,13 +10,16 @@ This is a **data pipeline monorepo** with two runtimes:
 - **Python** — data science: classification, export, publishing
 
 ```
-apps/cli/               → corpus <command> (scrape, extract, embed, status)
+apps/cli/               → corpus <command> (cdx-filter, scrape, extract, embed, classify, export, status)
 apps/cdx-filter/        → AWS Lambda for Common Crawl CDX filtering
+apps/api/               → Cloudflare Worker for api.docxcorp.us (own bun.lock, not a workspace)
+apps/site/              → Static Astro site for docxcorp.us
 packages/shared/        → DB client (Bun.sql), R2 storage, UI helpers
 packages/scraper/       → Downloads .docx from Common Crawl WARC archives
 packages/extractor/     → Text extraction via Docling
 packages/embedder/      → Embeddings via Google gemini-embedding-001
 scripts/classification/ → ML classification pipeline (Python)
+scripts/*.py            → HF export and one-off WARC trailing-bytes repair
 db/                     → PostgreSQL schema + migrations
 ```
 
@@ -100,7 +103,7 @@ bun run corpus status              # Show pipeline stats
 ## Key conventions
 
 - Use `bun` for all TS tooling (not node/npm/pnpm)
-- DB client is in `packages/shared/db.ts` — all pipeline stages use `DbClient`
-- Storage abstraction in `packages/shared/storage.ts` — R2 or local
+- DB client is in `packages/shared/db.ts` — the TS stages (scrape, extract, embed) use `DbClient`; Python writes classifications with psycopg2
+- Storage abstraction in `packages/shared/storage/` — R2 or local
 - Environment: `.env` at project root (gitignored), see `.env.example`
-- Python scripts manage their own deps via `pyproject.toml`
+- Python deps: `pyproject.toml` for classification and the extractor; standalone `scripts/*.py` declare inline `uv run` deps

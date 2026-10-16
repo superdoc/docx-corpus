@@ -1,4 +1,5 @@
-import { scrape, loadConfig, getCrawlIds, VERSION } from "@docx-corpus/scraper";
+import { getCrawlIds, loadConfig, scrape } from "@docx-corpus/scraper";
+import { version } from "../package.json";
 
 interface ParsedFlags {
   crawlIds?: string[];
@@ -8,7 +9,7 @@ interface ParsedFlags {
   retryFailed?: boolean;
 }
 
-function parseFlags(args: string[]): ParsedFlags {
+export function parseFlags(args: string[]): ParsedFlags {
   const flags: ParsedFlags = {};
 
   for (let i = 0; i < args.length; i++) {
@@ -61,8 +62,8 @@ Options
 
 Environment Variables
   CRAWL_ID             Common Crawl index ID (e.g., CC-MAIN-2025-51)
-  CONCURRENCY          Parallel WARC file downloads (default: 5)
-  RATE_LIMIT_RPS       WARC requests per second (default: 50)
+  CONCURRENCY          Parallel WARC file downloads (default: 1)
+  RATE_LIMIT_RPS       WARC requests per second (default: 2)
 
 Examples
   corpus scrape --crawl CC-MAIN-2025-51
@@ -109,7 +110,7 @@ export async function runScrape(args: string[]) {
     force: flags.force,
     retryFailed: flags.retryFailed,
     crawlIds,
-    version: VERSION,
+    version,
   });
 
   process.exit(0);

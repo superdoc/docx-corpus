@@ -1,25 +1,12 @@
-import { LambdaClient, InvokeCommand, InvocationType } from "@aws-sdk/client-lambda";
-import type { Config } from "../config";
+import { InvocationType, InvokeCommand, LambdaClient } from "@aws-sdk/client-lambda";
 
 const CDX_PATHS_URL = (crawlId: string) =>
   `https://data.commoncrawl.org/crawl-data/${crawlId}/cc-index.paths.gz`;
-
-const COLLINFO_URL = "https://index.commoncrawl.org/collinfo.json";
 
 export interface CdxFilterResult {
   crawlId: string;
   totalPaths: number;
   invoked: number;
-}
-
-/**
- * Fetch all available crawl IDs from Common Crawl's index API.
- */
-export async function getAllCrawlIds(): Promise<string[]> {
-  const res = await fetch(COLLINFO_URL);
-  if (!res.ok) throw new Error(`Failed to fetch crawl list: ${res.status}`);
-  const data = (await res.json()) as { id: string }[];
-  return data.map((c) => c.id);
 }
 
 /**

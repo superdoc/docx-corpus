@@ -149,7 +149,10 @@ export async function scrape(options: ScrapeOptions) {
   // Keep-alive: prevent Bun from exiting when event loop has no native I/O pending
   // (Bun may drain the event loop while async generators/promises are still active)
   const keepAlive = setInterval(() => {}, 60_000);
-  const cleanup = () => { clearInterval(keepAlive); process.exit(0); };
+  const cleanup = () => {
+    clearInterval(keepAlive);
+    process.exit(0);
+  };
   process.on("SIGINT", cleanup);
   process.on("SIGTERM", cleanup);
 
@@ -338,7 +341,9 @@ export async function scrape(options: ScrapeOptions) {
           } catch (err) {
             stats.failed++;
             clearLines(prevLineCount);
-            logError(`Error processing ${record.url}: ${err instanceof Error ? err.message : String(err)}`);
+            logError(
+              `Error processing ${record.url}: ${err instanceof Error ? err.message : String(err)}`,
+            );
             prevLineCount = 0;
           }
         }).finally(() => tasks.delete(task));
@@ -375,7 +380,11 @@ export async function scrape(options: ScrapeOptions) {
 
   // Generate manifest
   const cloudflareConfig = useCloud ? config.cloudflare : undefined;
-  const manifest = await generateManifest(config.database.url, config.storage.localPath, cloudflareConfig);
+  const manifest = await generateManifest(
+    config.database.url,
+    config.storage.localPath,
+    cloudflareConfig,
+  );
   if (manifest) {
     section("Manifest");
     keyValue("Documents", manifest.count);

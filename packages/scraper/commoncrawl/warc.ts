@@ -37,7 +37,13 @@ export async function fetchWarcRecord(
   record: CdxRecord,
   options: FetchOptions = {},
 ): Promise<WarcResult> {
-  const { timeoutMs = 45000, maxRetries = 10, maxBackoffMs = 60000, rateLimiter, onError } = options;
+  const {
+    timeoutMs = 45000,
+    maxRetries = 10,
+    maxBackoffMs = 60000,
+    rateLimiter,
+    onError,
+  } = options;
 
   const offset = parseInt(record.offset, 10);
   const length = parseInt(record.length, 10);
@@ -216,9 +222,7 @@ export function parseWarcRecord(data: Uint8Array): WarcResult {
   const bodyStart = httpHeaderEnd + 4;
   const availableInHttp = httpData.length - bodyStart;
   const sliceEnd =
-    httpContentLength !== null &&
-    httpContentLength >= 0 &&
-    httpContentLength <= availableInHttp
+    httpContentLength !== null && httpContentLength >= 0 && httpContentLength <= availableInHttp
       ? bodyStart + httpContentLength
       : httpData.length;
   const content = httpData.slice(bodyStart, sliceEnd);

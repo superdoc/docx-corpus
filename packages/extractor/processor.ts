@@ -123,7 +123,7 @@ class PersistentExtractor {
 
 export async function processDirectory(
   config: ExtractConfig,
-  verbose: boolean = false
+  verbose: boolean = false,
 ): Promise<void> {
   const { db, storage, inputPrefix, outputPrefix, batchSize } = config;
 
@@ -152,12 +152,7 @@ export async function processDirectory(
   await mkdir(tempDir, { recursive: true });
 
   try {
-    const { successCount, errorCount } = await processBatch(
-      documents,
-      config,
-      tempDir,
-      verbose
-    );
+    const { successCount, errorCount } = await processBatch(documents, config, tempDir, verbose);
 
     console.log(`Processed: ${successCount} success, ${errorCount} errors`);
   } finally {
@@ -176,7 +171,7 @@ async function processBatch(
   documents: DocumentRecord[],
   config: ExtractConfig,
   tempDir: string,
-  verbose: boolean
+  verbose: boolean,
 ): Promise<{ successCount: number; errorCount: number }> {
   const { db, storage, inputPrefix, outputPrefix, workers } = config;
   let successCount = 0;
@@ -234,7 +229,7 @@ async function processBatch(
   // Process a single document with timeout covering all operations
   const processDocument = async (
     doc: DocumentRecord,
-    extractor: PersistentExtractor
+    extractor: PersistentExtractor,
   ): Promise<{ success: boolean; needsRestart: boolean }> => {
     const sourceKey = `${inputPrefix}/${doc.id}.docx`;
 
@@ -258,10 +253,7 @@ async function processBatch(
     await storage.write(`${outputPrefix}/${doc.id}.txt`, result.text!);
 
     // Write extraction JSON to storage
-    await storage.write(
-      `${outputPrefix}/${doc.id}.json`,
-      JSON.stringify(result.extraction)
-    );
+    await storage.write(`${outputPrefix}/${doc.id}.json`, JSON.stringify(result.extraction));
 
     // Update database with extraction metadata
     await db.updateExtraction({
@@ -297,7 +289,9 @@ async function processBatch(
         const processPromise = processDocument(currentDoc, extractor);
         const timeoutPromise = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
-            reject(new Error(`Document processing timed out after ${EXTRACTION_TIMEOUT_MS / 1000}s`));
+            reject(
+              new Error(`Document processing timed out after ${EXTRACTION_TIMEOUT_MS / 1000}s`),
+            );
           }, EXTRACTION_TIMEOUT_MS);
         });
 
@@ -350,17 +344,21 @@ async function processBatch(
     const totalProcessed = successCount + errorCount;
     // Check if stalled: no progress for too long AND we haven't finished all documents
     if (timeSinceProgress > STALL_TIMEOUT_MS && totalProcessed < documents.length) {
-      console.error(`\nStall detected: no progress for ${STALL_TIMEOUT_MS / 1000}s, restarting extractors...`);
+      console.error(
+        `\nStall detected: no progress for ${STALL_TIMEOUT_MS / 1000}s, restarting extractors...`,
+      );
       stalled = true;
 
       // Force restart all extractors
-      await Promise.all(extractors.map(async (e) => {
-        try {
-          await e.restart();
-        } catch {
-          // Ignore restart errors
-        }
-      }));
+      await Promise.all(
+        extractors.map(async (e) => {
+          try {
+            await e.restart();
+          } catch {
+            // Ignore restart errors
+          }
+        }),
+      );
 
       stalled = false;
       lastProgressTime = Date.now();
@@ -369,11 +367,11 @@ async function processBatch(
 
   try {
     // Run all workers in parallel, each with its own extractor
-    await Promise.all(extractors.map(extractor => processWorker(extractor)));
+    await Promise.all(extractors.map((extractor) => processWorker(extractor)));
   } finally {
     // Always stop all extractors and clear intervals
     clearInterval(stallCheckInterval);
-    await Promise.all(extractors.map(e => e.stop()));
+    await Promise.all(extractors.map((e) => e.stop()));
   }
 
   // Clean up progress display

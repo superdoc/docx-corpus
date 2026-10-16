@@ -1,8 +1,4 @@
-import {
-  S3Client,
-  ListObjectsV2Command,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import type { Config } from "../config";
 
 export interface CdxRecord {
@@ -15,10 +11,7 @@ export interface CdxRecord {
   filename: string;
 }
 
-export async function* streamCdxFromR2(
-  config: Config,
-  crawlId: string
-): AsyncGenerator<CdxRecord> {
+export async function* streamCdxFromR2(config: Config, crawlId: string): AsyncGenerator<CdxRecord> {
   const { cloudflare } = config;
 
   const client = new S3Client({
@@ -34,7 +27,7 @@ export async function* streamCdxFromR2(
     new ListObjectsV2Command({
       Bucket: cloudflare.r2BucketName,
       Prefix: `cdx-filtered/${crawlId}/`,
-    })
+    }),
   );
 
   for (const obj of Contents) {
@@ -44,7 +37,7 @@ export async function* streamCdxFromR2(
       new GetObjectCommand({
         Bucket: cloudflare.r2BucketName,
         Key: obj.Key,
-      })
+      }),
     );
 
     const text = await response.Body?.transformToString();

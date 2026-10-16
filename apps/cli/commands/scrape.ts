@@ -91,7 +91,9 @@ export async function runScrape(args: string[]) {
       process.exit(1);
     }
     if (crawlIds.length < flags.crawlCount) {
-      console.warn(`Warning: Only ${crawlIds.length} crawls available (requested ${flags.crawlCount})`);
+      console.warn(
+        `Warning: Only ${crawlIds.length} crawls available (requested ${flags.crawlCount})`,
+      );
     }
   } else if (flags.crawlIds) {
     if (flags.crawlIds.length === 0) {

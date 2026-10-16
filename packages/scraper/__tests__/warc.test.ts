@@ -52,7 +52,12 @@ describe("parseWarcRecord", () => {
     body?: Uint8Array | string;
     appendRecordTerminator?: boolean;
   }): Uint8Array {
-    const { httpStatus = 200, contentType = "text/plain", body = "", appendRecordTerminator = false } = options;
+    const {
+      httpStatus = 200,
+      contentType = "text/plain",
+      body = "",
+      appendRecordTerminator = false,
+    } = options;
     const bodyBytes = typeof body === "string" ? new TextEncoder().encode(body) : body;
 
     const httpHeader = `HTTP/1.1 ${httpStatus} OK\r\nContent-Type: ${contentType}\r\n\r\n`;
@@ -61,11 +66,7 @@ describe("parseWarcRecord", () => {
 
     const warcHeader = `WARC/1.0\r\nWARC-Type: response\r\nContent-Length: ${warcContentLength}\r\n\r\n`;
 
-    const parts: Uint8Array[] = [
-      new TextEncoder().encode(warcHeader),
-      httpBytes,
-      bodyBytes,
-    ];
+    const parts: Uint8Array[] = [new TextEncoder().encode(warcHeader), httpBytes, bodyBytes];
     if (appendRecordTerminator) {
       parts.push(new Uint8Array([13, 10, 13, 10]));
     }

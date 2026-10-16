@@ -32,7 +32,7 @@ export async function listFilteredCrawls(config: Config): Promise<FilteredCrawl[
         Bucket: cloudflare.r2BucketName,
         Prefix: "cdx-filtered/",
         ContinuationToken: continuationToken,
-      })
+      }),
     );
 
     for (const obj of response.Contents || []) {

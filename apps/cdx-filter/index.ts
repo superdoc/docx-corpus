@@ -1,14 +1,9 @@
-import {
-  S3Client,
-  GetObjectCommand,
-  PutObjectCommand,
-} from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createGunzip } from "zlib";
 import { Readable, Transform } from "stream";
 import { pipeline } from "stream/promises";
 
-const DOCX_MIME =
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 // Common Crawl S3 - uses Lambda's IAM role credentials (authenticated access)
 const ccClient = new S3Client({
@@ -89,7 +84,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
     new GetObjectCommand({
       Bucket: "commoncrawl",
       Key: cdxPath,
-    })
+    }),
   );
 
   if (!response.Body) {
@@ -117,7 +112,7 @@ export async function handler(event: LambdaEvent): Promise<LambdaResponse> {
       Key: outputKey,
       Body: output,
       ContentType: "application/x-ndjson",
-    })
+    }),
   );
 
   console.log(`Uploaded to: ${outputKey}`);

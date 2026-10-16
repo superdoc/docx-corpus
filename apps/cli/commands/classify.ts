@@ -125,9 +125,12 @@ export async function runClassify(args: string[]) {
     const scriptPath = resolve(scriptDir, "classify.py");
 
     const pythonArgs = [
-      "python", scriptPath,
-      "--models-dir", flags.modelsDir,
-      "--batch-size", String(flags.batchSize),
+      "python",
+      scriptPath,
+      "--models-dir",
+      flags.modelsDir,
+      "--batch-size",
+      String(flags.batchSize),
     ];
 
     if (flags.languages) {
@@ -144,7 +147,9 @@ export async function runClassify(args: string[]) {
     console.log(`Script:    ${scriptPath}`);
     console.log(`Models:    ${flags.modelsDir}`);
     console.log(`Batch:     ${flags.batchSize}`);
-    console.log(`Modal:     ${flags.modal ? `yes (${flags.workers} workers, ${flags.gpu})` : "no (local)"}`);
+    console.log(
+      `Modal:     ${flags.modal ? `yes (${flags.workers} workers, ${flags.gpu})` : "no (local)"}`,
+    );
     if (flags.languages) console.log(`Languages: ${flags.languages}`);
     blank();
 

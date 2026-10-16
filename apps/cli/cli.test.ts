@@ -124,21 +124,14 @@ describe("parseFlags", () => {
 
   describe("combined flags", () => {
     test("parses all flags together", () => {
-      const flags = parseFlags([
-        "--crawl", "3",
-        "--force",
-        "--verbose",
-      ]);
+      const flags = parseFlags(["--crawl", "3", "--force", "--verbose"]);
       expect(flags.crawlCount).toBe(3);
       expect(flags.force).toBe(true);
       expect(flags.verbose).toBe(true);
     });
 
     test("parses crawl ID with other flags", () => {
-      const flags = parseFlags([
-        "--crawl", "CC-MAIN-2025-51,CC-MAIN-2025-48",
-        "-f",
-      ]);
+      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51,CC-MAIN-2025-48", "-f"]);
       expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51", "CC-MAIN-2025-48"]);
       expect(flags.force).toBe(true);
     });

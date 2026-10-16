@@ -254,11 +254,11 @@ npx wrangler dev
 
 ## Docker
 
-The container idles so operators can `docker exec` into it for long runs:
+The container idles so operators can `docker exec` into it for long runs. Its `.env` needs a `DATABASE_URL` the container can reach (`localhost` is the container itself) and R2 credentials; without R2, documents are written to `/app/corpus`, so mount a volume there.
 
 ```bash
 docker build -t docx-corpus .
-docker run -d --name docx-corpus --env-file .env docx-corpus
+docker run -d --name docx-corpus --env-file .env -v "$PWD/corpus:/app/corpus" docx-corpus
 docker exec -it docx-corpus bun run corpus scrape --crawl 3
 ```
 

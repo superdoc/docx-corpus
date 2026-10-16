@@ -1,15 +1,6 @@
-# CDX Filter Lambda
+# cdx-filter
 
-AWS Lambda function that filters Common Crawl CDX index files for `.docx` URLs.
-
-## Why a Separate Service?
-
-Common Crawl's HTTPS API is heavily rate-limited (503/429 errors). But their data lives in S3 (`s3://commoncrawl` in us-east-1), and AWS services in the same region can access it directly with **no rate limits**.
-
-| Approach | Speed | Cost |
-|----------|-------|------|
-| Local (HTTPS) | Days | Rate-limited |
-| Lambda (S3) | Minutes | ~$3/crawl |
+AWS Lambda that filters one Common Crawl CDX index file for `.docx` URLs and writes them to R2 at `cdx-filtered/{crawl-id}/*.jsonl`. It runs in `us-east-1`, next to Common Crawl's S3 bucket, which avoids the rate limits on Common Crawl's HTTPS API. From the repo root, `bun run corpus cdx-filter` shows which crawls still need filtering, and `--latest 1` or `--crawl <id>` invokes the Lambda.
 
 ## Setup
 
@@ -80,14 +71,8 @@ aws lambda update-function-code \
   --zip-file fileb://function.zip
 ```
 
-## Usage
+## Monitor
 
 ```bash
-# Process all CDX files for a crawl (from the repo root)
-bun run corpus cdx-filter --crawl CC-MAIN-2025-51
-
-# Monitor progress
 aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1
 ```
-
-Output is stored in R2 at `cdx-filtered/{crawl-id}/*.jsonl`.

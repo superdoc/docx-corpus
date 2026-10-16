@@ -1,25 +1,22 @@
 # docx-corpus
 
-## What it is
+A public dataset and pipeline that collects, describes, and shares DOCX files from the public web for research and testing.
 
-docx-corpus is a public dataset and pipeline for collecting, describing, and sharing DOCX files from the
-public web for research and testing.
+## Owns
 
-## What it owns
-
-- Discovering, downloading, validating, and deduplicating corpus documents.
-- Storing source files and extracted data with stable identities and metadata.
+- Finding, downloading, validating, and deduplicating documents.
+- Storing files and extracted data with stable IDs and metadata.
 - Text extraction, language detection, embeddings, and classification.
-- Publishing corpus data through downloads, APIs, and Hugging Face.
+- Publishing the corpus through downloads, the API, and Hugging Face.
 
-## What it does not own
+## Does not own
 
-- Document rendering, editing, or application API behavior.
-- Repairing every malformed DOCX or defining how Word should interpret it.
-- Product workflows built by corpus consumers.
+- Rendering, editing, or application APIs for documents.
+- Repairing every malformed DOCX, or defining how Word interprets it.
+- Products that corpus users build on top of it.
 
-## Current direction
+## Direction
 
 - Keep every pipeline stage reproducible and safe to rerun.
-- Preserve failures and duplicates as distinct outcomes instead of hiding them.
+- Record failures and duplicates as distinct outcomes; don't hide them.
 - Make the corpus useful across document-processing tools.

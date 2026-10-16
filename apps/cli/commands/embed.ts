@@ -122,7 +122,7 @@ export async function runEmbed(args: string[]) {
   console.log("Document Embedder");
   console.log("=================");
   console.log(
-    `Storage: ${useCloud ? `R2 (${envConfig.cloudflare.r2BucketName})` : `local (${envConfig.storage.localPath})`}`
+    `Storage: ${useCloud ? `R2 (${envConfig.cloudflare.r2BucketName})` : `local (${envConfig.storage.localPath})`}`,
   );
   console.log(`Input:   ${config.inputPrefix}/`);
   console.log(`Output:  database (embedding column)`);

@@ -16,26 +16,64 @@ interface DocumentRow {
 }
 
 const TYPE_LABELS: Record<string, string> = {
-  legal: "Legal", forms: "Forms", reports: "Reports", policies: "Policies",
-  educational: "Educational", correspondence: "Correspondence", technical: "Technical",
-  administrative: "Administrative", creative: "Creative", reference: "Reference",
+  legal: "Legal",
+  forms: "Forms",
+  reports: "Reports",
+  policies: "Policies",
+  educational: "Educational",
+  correspondence: "Correspondence",
+  technical: "Technical",
+  administrative: "Administrative",
+  creative: "Creative",
+  reference: "Reference",
   general: "General",
 };
 
 const TOPIC_LABELS: Record<string, string> = {
-  government: "Government", education: "Education", healthcare: "Healthcare",
-  finance: "Finance", legal_judicial: "Legal / Judicial", technology: "Technology",
-  environment: "Environment", nonprofit: "Nonprofit", general: "General",
+  government: "Government",
+  education: "Education",
+  healthcare: "Healthcare",
+  finance: "Finance",
+  legal_judicial: "Legal / Judicial",
+  technology: "Technology",
+  environment: "Environment",
+  nonprofit: "Nonprofit",
+  general: "General",
 };
 
 const LANG_NAMES: Record<string, string> = {
-  en: "English", ru: "Russian", cs: "Czech", pl: "Polish", es: "Spanish",
-  zh: "Chinese", lt: "Lithuanian", sk: "Slovak", de: "German", id: "Indonesian",
-  fr: "French", pt: "Portuguese", ar: "Arabic", ja: "Japanese", ko: "Korean",
-  it: "Italian", sv: "Swedish", nl: "Dutch", bg: "Bulgarian", tr: "Turkish",
-  vi: "Vietnamese", th: "Thai", uk: "Ukrainian", ro: "Romanian", hu: "Hungarian",
-  hr: "Croatian", fi: "Finnish", da: "Danish", nb: "Norwegian", el: "Greek",
-  he: "Hebrew", hi: "Hindi",
+  en: "English",
+  ru: "Russian",
+  cs: "Czech",
+  pl: "Polish",
+  es: "Spanish",
+  zh: "Chinese",
+  lt: "Lithuanian",
+  sk: "Slovak",
+  de: "German",
+  id: "Indonesian",
+  fr: "French",
+  pt: "Portuguese",
+  ar: "Arabic",
+  ja: "Japanese",
+  ko: "Korean",
+  it: "Italian",
+  sv: "Swedish",
+  nl: "Dutch",
+  bg: "Bulgarian",
+  tr: "Turkish",
+  vi: "Vietnamese",
+  th: "Thai",
+  uk: "Ukrainian",
+  ro: "Romanian",
+  hu: "Hungarian",
+  hr: "Croatian",
+  fi: "Finnish",
+  da: "Danish",
+  nb: "Norwegian",
+  el: "Greek",
+  he: "Hebrew",
+  hi: "Hindi",
 };
 
 function corsHeaders(origin: string): Record<string, string> {
@@ -65,7 +103,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const reqOrigin = request.headers.get("Origin") || "";
-    const origin = reqOrigin.startsWith("http://localhost") ? reqOrigin : (env.CORS_ORIGIN || "*");
+    const origin = reqOrigin.startsWith("http://localhost") ? reqOrigin : env.CORS_ORIGIN || "*";
 
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders(origin) });
@@ -137,33 +175,38 @@ async function handleStats(env: Env, origin: string): Promise<Response> {
   const hero = heroRows[0];
   const totalClassified = typeRows.reduce((s: number, t: { count: number }) => s + t.count, 0);
 
-  return json({
-    hero: {
-      total_documents: hero.total,
-      languages: hero.languages,
-      types: typeRows.length,
-      topics: topicRows.length,
-      avg_confidence: hero.avg_confidence,
+  return json(
+    {
+      hero: {
+        total_documents: hero.total,
+        languages: hero.languages,
+        types: typeRows.length,
+        topics: topicRows.length,
+        avg_confidence: hero.avg_confidence,
+      },
+      types: typeRows.map((t: { id: string; count: number }) => ({
+        id: t.id,
+        label: TYPE_LABELS[t.id] || t.id,
+        count: t.count,
+        percentage: Math.round((1000 * t.count) / totalClassified) / 10,
+      })),
+      topics: topicRows.map((t: { id: string; count: number }) => ({
+        id: t.id,
+        label: TOPIC_LABELS[t.id] || t.id,
+        count: t.count,
+        percentage: Math.round((1000 * t.count) / totalClassified) / 10,
+      })),
+      languages: langRows.map((l: { code: string; count: number }) => ({
+        code: l.code,
+        name: LANG_NAMES[l.code] || l.code,
+        count: l.count,
+        percentage: Math.round((1000 * l.count) / hero.total) / 10,
+      })),
     },
-    types: typeRows.map((t: { id: string; count: number }) => ({
-      id: t.id,
-      label: TYPE_LABELS[t.id] || t.id,
-      count: t.count,
-      percentage: Math.round((1000 * t.count) / totalClassified) / 10,
-    })),
-    topics: topicRows.map((t: { id: string; count: number }) => ({
-      id: t.id,
-      label: TOPIC_LABELS[t.id] || t.id,
-      count: t.count,
-      percentage: Math.round((1000 * t.count) / totalClassified) / 10,
-    })),
-    languages: langRows.map((l: { code: string; count: number }) => ({
-      code: l.code,
-      name: LANG_NAMES[l.code] || l.code,
-      count: l.count,
-      percentage: Math.round((1000 * l.count) / hero.total) / 10,
-    })),
-  }, 200, origin, 300); // cache 5 minutes
+    200,
+    origin,
+    300,
+  ); // cache 5 minutes
 }
 
 // ---------- shared filter builder ----------
@@ -204,19 +247,35 @@ function buildFilters(url: URL): { where: string; params: unknown[]; paramIndex:
 
 // Build filters excluding one dimension (for facet counts)
 function buildFiltersExcluding(url: URL, exclude: string): { where: string; params: unknown[] } {
-  const type = exclude === "type" ? "" : (url.searchParams.get("type") || "");
-  const topic = exclude === "topic" ? "" : (url.searchParams.get("topic") || "");
-  const lang = exclude === "lang" ? "" : (url.searchParams.get("lang") || "");
+  const type = exclude === "type" ? "" : url.searchParams.get("type") || "";
+  const topic = exclude === "topic" ? "" : url.searchParams.get("topic") || "";
+  const lang = exclude === "lang" ? "" : url.searchParams.get("lang") || "";
   const minConf = parseFloat(url.searchParams.get("min_confidence") || "0");
 
   const conditions: string[] = ["document_type IS NOT NULL"];
   const params: unknown[] = [];
   let i = 1;
 
-  if (type) { conditions.push(`document_type = $${i}`); params.push(type); i++; }
-  if (topic) { conditions.push(`document_topic = $${i}`); params.push(topic); i++; }
-  if (lang) { conditions.push(`language = $${i}`); params.push(lang); i++; }
-  if (minConf > 0) { conditions.push(`classification_confidence >= $${i}`); params.push(minConf); i++; }
+  if (type) {
+    conditions.push(`document_type = $${i}`);
+    params.push(type);
+    i++;
+  }
+  if (topic) {
+    conditions.push(`document_topic = $${i}`);
+    params.push(topic);
+    i++;
+  }
+  if (lang) {
+    conditions.push(`language = $${i}`);
+    params.push(lang);
+    i++;
+  }
+  if (minConf > 0) {
+    conditions.push(`classification_confidence >= $${i}`);
+    params.push(minConf);
+    i++;
+  }
 
   return { where: conditions.join(" AND "), params };
 }
@@ -244,26 +303,26 @@ async function handleDocuments(url: URL, env: Env, origin: string): Promise<Resp
          FROM documents WHERE ${where}
          ORDER BY classification_confidence DESC NULLS LAST
          LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
-        [...params, limit, offset]
+        [...params, limit, offset],
       ),
       sql.query(
         `SELECT document_type AS id, COUNT(*)::int AS count
          FROM documents WHERE ${typeFacet.where}
          GROUP BY document_type ORDER BY count DESC`,
-        typeFacet.params
+        typeFacet.params,
       ),
       sql.query(
         `SELECT document_topic AS id, COUNT(*)::int AS count
          FROM documents WHERE ${topicFacet.where}
          GROUP BY document_topic ORDER BY count DESC`,
-        topicFacet.params
+        topicFacet.params,
       ),
       sql.query(
         `SELECT COALESCE(NULLIF(language, 'unknown'), 'unknown') AS code, COUNT(*)::int AS count
          FROM documents WHERE ${langFacet.where}
          GROUP BY COALESCE(NULLIF(language, 'unknown'), 'unknown')
          ORDER BY count DESC LIMIT 20`,
-        langFacet.params
+        langFacet.params,
       ),
     ]);
 
@@ -278,15 +337,22 @@ async function handleDocuments(url: URL, env: Env, origin: string): Promise<Resp
       confidence: r.classification_confidence,
     }));
 
-    const langTotal = (langCounts as { code: string; count: number }[]).reduce((s, l) => s + l.count, 0);
+    const langTotal = (langCounts as { code: string; count: number }[]).reduce(
+      (s, l) => s + l.count,
+      0,
+    );
     const facets = {
-      types: (typeCounts as { id: string; count: number }[]).map(t => ({
-        id: t.id, label: TYPE_LABELS[t.id] || t.id, count: t.count,
+      types: (typeCounts as { id: string; count: number }[]).map((t) => ({
+        id: t.id,
+        label: TYPE_LABELS[t.id] || t.id,
+        count: t.count,
       })),
-      topics: (topicCounts as { id: string; count: number }[]).map(t => ({
-        id: t.id, label: TOPIC_LABELS[t.id] || t.id, count: t.count,
+      topics: (topicCounts as { id: string; count: number }[]).map((t) => ({
+        id: t.id,
+        label: TOPIC_LABELS[t.id] || t.id,
+        count: t.count,
       })),
-      languages: (langCounts as { code: string; count: number }[]).map(l => ({
+      languages: (langCounts as { code: string; count: number }[]).map((l) => ({
         code: l.code,
         name: LANG_NAMES[l.code] || l.code,
         count: l.count,
@@ -336,10 +402,10 @@ async function handleManifest(url: URL, env: Env, origin: string): Promise<Respo
   try {
     const sql = neon(env.DATABASE_URL);
     const { where, params, paramIndex } = buildFilters(url);
-    const rows = await sql.query(
+    const rows = (await sql.query(
       `SELECT id FROM documents WHERE ${where} ORDER BY id LIMIT $${paramIndex}`,
-      [...params, 2000000]
-    ) as { id: string }[];
+      [...params, 2000000],
+    )) as { id: string }[];
 
     const body = rows.map((r) => `${R2_BASE}${r.id}.docx`).join("\n") + "\n";
 

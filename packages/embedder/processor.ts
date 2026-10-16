@@ -105,7 +105,10 @@ function weightedAverageEmbeddings(embeddings: number[][], weights: number[]): n
   return result;
 }
 
-export async function processEmbeddings(config: EmbedConfig, verbose: boolean = false): Promise<void> {
+export async function processEmbeddings(
+  config: EmbedConfig,
+  verbose: boolean = false,
+): Promise<void> {
   const { db, storage, inputPrefix, batchSize, concurrency } = config;
 
   const apiKey = process.env.GOOGLE_API_KEY;
@@ -275,9 +278,12 @@ export async function processEmbeddings(config: EmbedConfig, verbose: boolean = 
               retries++;
               rateLimiter.backoff();
               if (verbose) {
-                const reason = errorMsg.includes("timeout") || errorMsg.includes("timed out") || errorMsg.includes("TimeoutError")
-                  ? "timeout"
-                  : "rate limited";
+                const reason =
+                  errorMsg.includes("timeout") ||
+                  errorMsg.includes("timed out") ||
+                  errorMsg.includes("TimeoutError")
+                    ? "timeout"
+                    : "rate limited";
                 console.log(`  Retrying (${reason}, attempt ${retries}/${maxRetries})...`);
               }
             } else {
@@ -285,7 +291,9 @@ export async function processEmbeddings(config: EmbedConfig, verbose: boolean = 
             }
           }
         }
-        throw new Error(`Failed after ${maxRetries} retries for batch starting at ${task.startIdx}`);
+        throw new Error(
+          `Failed after ${maxRetries} retries for batch starting at ${task.startIdx}`,
+        );
       };
 
       // Run batches with concurrency limit

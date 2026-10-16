@@ -43,7 +43,9 @@ export async function runCrawls(args: string[]) {
 
   if (crawls.length === 0) {
     console.log("No filtered crawls found in R2.");
-    console.log("Run the cdx-filter Lambda first: cd apps/cdx-filter && ./invoke-all.sh CC-MAIN-2025-51");
+    console.log(
+      "Run the cdx-filter Lambda first: cd apps/cdx-filter && ./invoke-all.sh CC-MAIN-2025-51",
+    );
     process.exit(0);
   }
 

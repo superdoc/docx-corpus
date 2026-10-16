@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
   "files": {
-    "includes": ["src/**"]
+    "includes": ["apps/api/src/**", "apps/cdx-filter/*.ts", "apps/cli/**/*.ts", "packages/**/*.ts"]
   },
   "formatter": {
     "indentStyle": "space",

@@ -74,7 +74,9 @@ export async function runCdxFilter(args: string[]) {
     const result = await invokeCdxFilter(crawlId, { region, concurrency });
     console.log(`Queued ${result.invoked} Lambda invocations for ${crawlId}`);
     blank();
-    console.log("Monitor progress: aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1");
+    console.log(
+      "Monitor progress: aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1",
+    );
     return;
   }
 

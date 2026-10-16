@@ -83,7 +83,9 @@ export interface DbClient {
   getDocument(id: string): Promise<DocumentRecord | null>;
   getDocumentByUrl(url: string): Promise<DocumentRecord | null>;
   getProcessedUrlHashes(opts?: { excludeFailed?: boolean }): Promise<Set<string>>;
-  upsertDuplicateBatch(records: { id: string; sourceUrl: string; crawlId: string; filename: string }[]): Promise<void>;
+  upsertDuplicateBatch(
+    records: { id: string; sourceUrl: string; crawlId: string; filename: string }[],
+  ): Promise<void>;
   getUploadedUrls(): Promise<Set<string>>;
   getFailedUrls(): Promise<Set<string>>;
   getDuplicateUrls(): Promise<Set<string>>;
@@ -112,8 +114,15 @@ export interface DbClient {
 
   // LLM classification methods
   updateLLMClassification(data: LLMClassificationData): Promise<void>;
-  updateLLMClassificationBatch(ids: string[], data: Omit<LLMClassificationData, "id">): Promise<void>;
-  getLLMClassificationStats(): Promise<{ classified: number; pending: number; byType: Record<string, number> }>;
+  updateLLMClassificationBatch(
+    ids: string[],
+    data: Omit<LLMClassificationData, "id">,
+  ): Promise<void>;
+  getLLMClassificationStats(): Promise<{
+    classified: number;
+    pending: number;
+    byType: Record<string, number>;
+  }>;
 
   // Stats
   getExtractionStats(): Promise<{ extracted: number; pending: number; errors: number }>;
@@ -131,7 +140,7 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
 
     async upsertDocument(doc: Partial<DocumentRecord> & { id: string }) {
       const columns = Object.keys(doc).filter(
-        (k) => doc[k as keyof typeof doc] !== undefined && k !== "embedding"
+        (k) => doc[k as keyof typeof doc] !== undefined && k !== "embedding",
       );
       const values = columns.map((k) => doc[k as keyof typeof doc]);
       const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
@@ -140,28 +149,21 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
 
       if (hasRequiredFields) {
         const updateColumns = columns.filter((k) => k !== "id");
-        const updateClauses = updateColumns
-          .map((key) => `${key} = EXCLUDED.${key}`)
-          .join(", ");
+        const updateClauses = updateColumns.map((key) => `${key} = EXCLUDED.${key}`).join(", ");
 
         await sql.unsafe(
           `INSERT INTO documents (${columns.join(", ")}) VALUES (${placeholders})
            ON CONFLICT (id) DO UPDATE SET ${updateClauses}`,
-          values as unknown[]
+          values as unknown[],
         );
       } else {
         const updateColumns = columns.filter((k) => k !== "id");
         if (updateColumns.length === 0) return;
 
-        const setClauses = updateColumns
-          .map((key, i) => `${key} = $${i + 2}`)
-          .join(", ");
+        const setClauses = updateColumns.map((key, i) => `${key} = $${i + 2}`).join(", ");
         const updateValues = [doc.id, ...updateColumns.map((k) => doc[k as keyof typeof doc])];
 
-        await sql.unsafe(
-          `UPDATE documents SET ${setClauses} WHERE id = $1`,
-          updateValues
-        );
+        await sql.unsafe(`UPDATE documents SET ${setClauses} WHERE id = $1`, updateValues);
       }
     },
 
@@ -200,18 +202,25 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
 
     async upsertDuplicateBatch(records) {
       if (records.length === 0) return;
-      const values = records.map((_, i) => {
-        const b = i * 6;
-        return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6})`;
-      }).join(", ");
+      const values = records
+        .map((_, i) => {
+          const b = i * 6;
+          return `($${b + 1}, $${b + 2}, $${b + 3}, $${b + 4}, $${b + 5}, $${b + 6})`;
+        })
+        .join(", ");
       const params = records.flatMap((r) => [
-        r.id, r.sourceUrl, r.crawlId, r.filename, "duplicate", "cross-crawl duplicate",
+        r.id,
+        r.sourceUrl,
+        r.crawlId,
+        r.filename,
+        "duplicate",
+        "cross-crawl duplicate",
       ]);
       await sql.unsafe(
         `INSERT INTO documents (id, source_url, crawl_id, original_filename, status, error_message)
          VALUES ${values}
          ON CONFLICT (id) DO NOTHING`,
-        params
+        params,
       );
     },
 
@@ -322,7 +331,7 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
           embedding_model = $2,
           embedding = $3::vector
         WHERE id = $4`,
-        [embeddedAt, data.embedding_model, embeddingStr, data.id]
+        [embeddedAt, data.embedding_model, embeddingStr, data.id],
       );
     },
 

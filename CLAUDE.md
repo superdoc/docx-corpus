@@ -39,8 +39,8 @@ The scraper maintains **exact parity** between CDX URLs and database records: ev
 ### Document statuses
 
 - `uploaded` — valid .docx saved to R2, ID is `{contentHash}`
-- `failed` — WARC download failed or content is invalid docx, ID is `failed-{urlHash}` (download error) or `{contentHash}` (validation error)
-- `duplicate` — same content already exists under a different URL, ID is `dup-{urlHash}`
+- `failed` — WARC download failed or content is invalid docx, ID is `failed-{sha256(url+crawlId)}`
+- `duplicate` — same content already exists under a different URL, ID is `dup-{sha256(url+crawlId)}`
 
 ### ID scheme
 
@@ -49,9 +49,10 @@ IDs are content-addressed for storage mapping (`documents/{id}.docx`):
 | Scenario | ID | Reason |
 |---|---|---|
 | Uploaded | `{sha256(content)}` | Maps to R2 storage key |
-| Download failed | `failed-{sha256(url)}` | No content available, use URL hash |
-| Validation failed | `{sha256(content)}` | Content exists but isn't valid docx |
+| Download or validation failed | `failed-{sha256(url+crawlId)}` | Nothing is stored, so scope per URL and crawl; a shared ID would overwrite another URL's or crawl's record |
 | Content duplicate | `dup-{sha256(url+crawlId)}` | Scoped per crawl so each crawl keeps its own dup record |
+
+Rows written before this scheme may use `failed-{sha256(url)}` or `{sha256(content)}` with `status = 'failed'`.
 
 ### Dedup paths
 
@@ -65,7 +66,9 @@ The scraper handles three dedup scenarios in order:
 
 ### Stale record cleanup
 
-When a WARC download succeeds, the scraper deletes any previous `failed-{urlHash}` record for that URL. This prevents duplicate records when a URL fails on one attempt but succeeds on a later retry (since the failed and successful records have different IDs).
+Each attempt's outcome is written by `recordOutcome` in one transaction, under an advisory lock on the URL and crawl. It deletes that URL's other `failed` rows in the crawl, matched by `source_url` and `crawl_id` so older ID formats go too, and then writes the outcome. A failure is not written if the URL already has a non-failed row in the crawl. An earlier failure stays until its replacement commits, and a failure never sits beside a success for the same URL and crawl. Failed records in other crawls are kept.
+
+Known gaps: two successful captures of one URL with different bytes still leave two `uploaded` rows; `upsertDuplicateBatch` writes cross-crawl duplicates without this lock; and an `uploaded` row's ID is its content hash, so the same URL and content uploaded again in a later crawl (with `--force`) moves the row to that crawl.
 
 ### Re-run safety
 

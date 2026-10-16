@@ -61,10 +61,17 @@ export interface EmbeddingData {
   embedded_at?: string;
 }
 
+export interface OutcomeKey {
+  id: string;
+  source_url: string;
+  crawl_id: string;
+  status: DocumentStatus;
+}
+
 export interface DbClient {
   // Scraping
-  upsertDocument(doc: Partial<DocumentRecord> & { id: string }): Promise<void>;
-  deleteDocument(id: string, crawlId?: string): Promise<void>;
+  // Writes one CDX URL's outcome in its crawl, replacing that URL's earlier failed rows.
+  recordOutcome(doc: Partial<DocumentRecord> & OutcomeKey): Promise<void>;
   getDocument(id: string): Promise<DocumentRecord | null>;
   getProcessedUrlHashes(opts?: { excludeFailed?: boolean }): Promise<Set<string>>;
   upsertDuplicateBatch(
@@ -96,47 +103,54 @@ export interface DbClient {
   close(): Promise<void>;
 }
 
+async function upsert(sql: SQL, doc: Partial<DocumentRecord> & OutcomeKey) {
+  const columns = Object.keys(doc).filter(
+    (k) => doc[k as keyof typeof doc] !== undefined && k !== "embedding",
+  );
+  const values = columns.map((k) => doc[k as keyof typeof doc]);
+  const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
+  const updateClauses = columns
+    .filter((k) => k !== "id")
+    .map((key) => `${key} = EXCLUDED.${key}`)
+    .join(", ");
+
+  await sql.unsafe(
+    `INSERT INTO documents (${columns.join(", ")}) VALUES (${placeholders})
+     ON CONFLICT (id) DO UPDATE SET ${updateClauses}`,
+    values as unknown[],
+  );
+}
+
 export async function createDb(databaseUrl: string): Promise<DbClient> {
   const sql = new SQL({ url: databaseUrl });
 
   return {
     // ==================== Scraping Methods ====================
 
-    async upsertDocument(doc: Partial<DocumentRecord> & { id: string }) {
-      const columns = Object.keys(doc).filter(
-        (k) => doc[k as keyof typeof doc] !== undefined && k !== "embedding",
-      );
-      const values = columns.map((k) => doc[k as keyof typeof doc]);
-      const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
-
-      const hasRequiredFields = "source_url" in doc && "crawl_id" in doc;
-
-      if (hasRequiredFields) {
-        const updateColumns = columns.filter((k) => k !== "id");
-        const updateClauses = updateColumns.map((key) => `${key} = EXCLUDED.${key}`).join(", ");
-
-        await sql.unsafe(
-          `INSERT INTO documents (${columns.join(", ")}) VALUES (${placeholders})
-           ON CONFLICT (id) DO UPDATE SET ${updateClauses}`,
-          values as unknown[],
-        );
-      } else {
-        const updateColumns = columns.filter((k) => k !== "id");
-        if (updateColumns.length === 0) return;
-
-        const setClauses = updateColumns.map((key, i) => `${key} = $${i + 2}`).join(", ");
-        const updateValues = [doc.id, ...updateColumns.map((k) => doc[k as keyof typeof doc])];
-
-        await sql.unsafe(`UPDATE documents SET ${setClauses} WHERE id = $1`, updateValues);
-      }
-    },
-
-    async deleteDocument(id: string, crawlId?: string) {
-      if (crawlId) {
-        await sql`DELETE FROM documents WHERE id = ${id} AND crawl_id = ${crawlId}`;
-      } else {
-        await sql`DELETE FROM documents WHERE id = ${id}`;
-      }
+    async recordOutcome(doc) {
+      await sql.begin(async (tx) => {
+        // Serialize captures of the same URL in the same crawl until commit.
+        await tx`SELECT pg_advisory_xact_lock(hashtext(${doc.source_url}), hashtext(${doc.crawl_id}))`;
+        await tx`
+          DELETE FROM documents
+          WHERE source_url = ${doc.source_url} AND crawl_id = ${doc.crawl_id}
+            AND status = 'failed' AND id <> ${doc.id}
+        `;
+        if (doc.status === "failed") {
+          const [settled] = await tx`
+            SELECT 1 FROM documents
+            WHERE source_url = ${doc.source_url} AND crawl_id = ${doc.crawl_id}
+              AND status <> 'failed'
+            LIMIT 1
+          `;
+          // A failure never replaces or sits beside a success; drop any row under its own ID too.
+          if (settled) {
+            await tx`DELETE FROM documents WHERE id = ${doc.id} AND status = 'failed'`;
+            return;
+          }
+        }
+        await upsert(tx, doc);
+      });
     },
 
     async getDocument(id: string) {

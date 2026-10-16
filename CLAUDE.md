@@ -52,7 +52,13 @@ IDs are content-addressed for storage mapping (`documents/{id}.docx`):
 | Download or validation failed | `failed-{sha256(url+crawlId)}` | Nothing is stored, so scope per URL and crawl; a shared ID would overwrite another URL's or crawl's record |
 | Content duplicate | `dup-{sha256(url+crawlId)}` | Scoped per crawl so each crawl keeps its own dup record |
 
-Rows written before this scheme may use `failed-{sha256(url)}` or `{sha256(content)}` with `status = 'failed'`.
+Failed rows written before this scheme use other IDs. As of 2026-10-16 production has:
+
+- `failed-{md5(url)}`: 89,627 download errors from a March 2026 backfill
+- `{sha256(content)}`: 28,152 rows, both invalid content and 17,797 "backfill: valid docx but not uploaded to R2"
+- `failed-{sha256(url)}`: 83 rows
+
+Code matches failed rows by `source_url`, `crawl_id` and `status`, never by ID format.
 
 ### Dedup paths
 

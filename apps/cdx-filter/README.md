@@ -1,6 +1,6 @@
 # cdx-filter
 
-AWS Lambda that filters one Common Crawl CDX index file for `.docx` URLs and writes them to R2 at `cdx-filtered/{crawl-id}/*.jsonl`. It runs in `us-east-1`, next to Common Crawl's S3 bucket, which avoids the rate limits on Common Crawl's HTTPS API. Invoke it with `corpus cdx-filter`.
+AWS Lambda that filters one Common Crawl CDX index file for `.docx` URLs and writes them to R2 at `cdx-filtered/{crawl-id}/*.jsonl`. It runs in `us-east-1`, next to Common Crawl's S3 bucket, which avoids the rate limits on Common Crawl's HTTPS API. Invoke it with `bun run corpus cdx-filter` from the repo root.
 
 ## Setup
 

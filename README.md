@@ -84,7 +84,7 @@ Set these in `.env`. See [`.env.example`](.env.example) for the rest.
 | Variable | Needed for |
 |---|---|
 | `DATABASE_URL` | Every command |
-| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | Storing files in R2. Without them, files go to `STORAGE_PATH` (default `./corpus`). |
+| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | `crawls`, `cdx-filter` without `--crawl`, and storing files in R2. Without them, files go to `STORAGE_PATH` (default `./corpus`). |
 | `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `cdx-filter`. Needs `lambda:InvokeFunction` on the `cdx-filter` function. |
 | `GOOGLE_API_KEY` | `embed` |
 | `ANTHROPIC_API_KEY` | Labeling training data for classification |

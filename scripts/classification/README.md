@@ -32,7 +32,7 @@ python evaluate.py labels --input labeled_docs.jsonl
 python evaluate.py corpus
 ```
 
-`corpus classify` from the repo root runs step 4.
+`bun run corpus classify` from the repo root runs step 4.
 
 ## Modal (cloud GPUs)
 

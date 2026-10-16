@@ -155,6 +155,16 @@ describe.skipIf(!url)("processRecord failed records", () => {
     expect(await rows()).toEqual([`C1 uploaded ${URL_A}`]);
   });
 
+  test("a later failure clears stale failed rows beside an existing success", async () => {
+    await sql`
+      INSERT INTO documents (id, source_url, crawl_id, status) VALUES
+        ('legacy-success', ${URL_A}, 'C1', 'uploaded'),
+        ('failed-legacy-url-hash', ${URL_A}, 'C1', 'failed')
+    `;
+    await run(URL_A, "C1", fails);
+    expect(await rows()).toEqual([`C1 uploaded ${URL_A}`]);
+  });
+
   test("concurrent failures and one success leave only the success", async () => {
     await Promise.all([
       run(URL_A, "C1", fails),

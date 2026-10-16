@@ -131,6 +131,11 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       await sql.begin(async (tx) => {
         // Serialize captures of the same URL in the same crawl until commit.
         await tx`SELECT pg_advisory_xact_lock(hashtext(${doc.source_url}), hashtext(${doc.crawl_id}))`;
+        await tx`
+          DELETE FROM documents
+          WHERE source_url = ${doc.source_url} AND crawl_id = ${doc.crawl_id}
+            AND status = 'failed' AND id <> ${doc.id}
+        `;
         if (doc.status === "failed") {
           const [settled] = await tx`
             SELECT 1 FROM documents
@@ -138,13 +143,12 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
               AND status <> 'failed'
             LIMIT 1
           `;
-          if (settled) return;
+          // A failure never replaces or sits beside a success; drop any row under its own ID too.
+          if (settled) {
+            await tx`DELETE FROM documents WHERE id = ${doc.id} AND status = 'failed'`;
+            return;
+          }
         }
-        await tx`
-          DELETE FROM documents
-          WHERE source_url = ${doc.source_url} AND crawl_id = ${doc.crawl_id}
-            AND status = 'failed' AND id <> ${doc.id}
-        `;
         await upsert(tx, doc);
       });
     },

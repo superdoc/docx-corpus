@@ -68,7 +68,7 @@ The scraper handles three dedup scenarios in order:
 
 Each attempt's outcome is written by `recordOutcome` in one transaction, under an advisory lock on the URL and crawl. It deletes that URL's other `failed` rows in the crawl, matched by `source_url` and `crawl_id` so older ID formats go too, and then writes the outcome. A failure is not written if the URL already has a non-failed row in the crawl. An earlier failure stays until its replacement commits, and a failure never sits beside a success for the same URL and crawl. Failed records in other crawls are kept.
 
-Known gaps: two successful captures of one URL with different bytes still leave two `uploaded` rows, and `upsertDuplicateBatch` writes cross-crawl duplicates without this lock.
+Known gaps: two successful captures of one URL with different bytes still leave two `uploaded` rows; `upsertDuplicateBatch` writes cross-crawl duplicates without this lock; and an `uploaded` row's ID is its content hash, so the same URL and content uploaded again in a later crawl (with `--force`) moves the row to that crawl.
 
 ### Re-run safety
 

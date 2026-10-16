@@ -1,5 +1,3 @@
-import type { EmbeddingModel } from "./types";
-
 export interface EmbedderConfig {
   database: {
     url: string;
@@ -15,8 +13,6 @@ export interface EmbedderConfig {
   };
   embed: {
     inputPrefix: string;
-    model: EmbeddingModel;
-    batchSize: number;
     concurrency: number;
   };
   google: {
@@ -42,8 +38,6 @@ export function loadEmbedderConfig(): EmbedderConfig {
     },
     embed: {
       inputPrefix: env.EMBED_INPUT_PREFIX || "extracted",
-      model: (env.EMBED_MODEL as EmbeddingModel) || "google",
-      batchSize: parseInt(env.EMBED_BATCH_SIZE || "100", 10),
       concurrency: parseInt(env.EMBED_CONCURRENCY || "20", 10),
     },
     google: {

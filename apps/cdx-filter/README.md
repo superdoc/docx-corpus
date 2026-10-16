@@ -81,8 +81,8 @@ aws lambda update-function-code \
 ## Usage
 
 ```bash
-# Process all CDX files for a crawl
-./invoke-all.sh CC-MAIN-2025-51
+# Process all CDX files for a crawl (from the repo root)
+bun run corpus cdx-filter --crawl CC-MAIN-2025-51
 
 # Monitor progress
 aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1

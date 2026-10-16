@@ -48,7 +48,7 @@ corpus cdx-filter --crawl CC-MAIN-2026-08 # Filter a specific crawl via Lambda
 corpus cdx-filter --latest 3              # Filter 3 newest missing crawls
 corpus crawls                              # List available crawls from R2
 corpus scrape --crawl CC-MAIN-2025-51      # Scrape a specific crawl
-corpus scrape --crawl 3 --batch 100        # Latest 3 crawls, 100 docs each
+corpus scrape --crawl 3                    # Latest 3 crawls
 corpus extract                             # Extract text from all pending
 corpus extract -b 100 -w 8                 # Custom batch size + workers
 corpus classify                            # Classify all pending documents
@@ -124,14 +124,15 @@ The AWS IAM user/role needs `lambda:InvokeFunction` permission on the `cdx-filte
 Downloads WARC records from Common Crawl, validates ZIP structure, computes SHA-256 hash, deduplicates, and stores to R2/local filesystem.
 
 ```bash
-corpus scrape --crawl CC-MAIN-2025-51 --batch 500
+corpus scrape --crawl CC-MAIN-2025-51
 corpus scrape --crawl 3                  # Latest 3 crawls
+corpus scrape --crawl CC-MAIN-2025-51 --retry-failed  # Re-download failed URLs
 corpus scrape --crawl CC-MAIN-2025-51 --force  # Re-process existing
 ```
 
 - Adaptive rate limiting (backs off on 503/429, recovers on success)
 - Content-addressed storage (`documents/{sha256}.docx`)
-- Deduplication by content hash
+- Deduplication by URL and content hash; failures and duplicates are recorded
 
 ### 3. Extraction
 
@@ -253,9 +254,12 @@ npx wrangler dev
 
 ## Docker
 
+The container idles so operators can `docker exec` into it for long runs:
+
 ```bash
 docker build -t docx-corpus .
-docker run -e DATABASE_URL=postgres://... docx-corpus scrape --batch 100
+docker run -d --name docx-corpus --env-file .env docx-corpus
+docker exec -it docx-corpus bun run corpus scrape --crawl 3
 ```
 
 ## Takedown Requests

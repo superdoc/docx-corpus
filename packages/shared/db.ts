@@ -61,70 +61,34 @@ export interface EmbeddingData {
   embedded_at?: string;
 }
 
-export interface ClassificationData {
-  id: string;
-  cluster_id: number;
-  cluster_label?: string;
-  classified_at?: string;
-}
-
-export interface LLMClassificationData {
-  id: string;
-  documentType: string;
-  documentTopic: string;
-  confidence: number;
-  model: string;
-}
-
 export interface DbClient {
-  // Scraping methods (existing)
+  // Scraping
   upsertDocument(doc: Partial<DocumentRecord> & { id: string }): Promise<void>;
   deleteDocument(id: string, crawlId?: string): Promise<void>;
   getDocument(id: string): Promise<DocumentRecord | null>;
-  getDocumentByUrl(url: string): Promise<DocumentRecord | null>;
   getProcessedUrlHashes(opts?: { excludeFailed?: boolean }): Promise<Set<string>>;
   upsertDuplicateBatch(
     records: { id: string; sourceUrl: string; crawlId: string; filename: string }[],
   ): Promise<void>;
-  getUploadedUrls(): Promise<Set<string>>;
-  getFailedUrls(): Promise<Set<string>>;
-  getDuplicateUrls(): Promise<Set<string>>;
   getUrlsForCrawl(crawlId: string): Promise<Set<string>>;
-  getDocumentsByStatus(status: DocumentStatus, limit?: number): Promise<DocumentRecord[]>;
   getStats(): Promise<{ status: string; count: number }[]>;
-  getAllDocuments(limit?: number): Promise<DocumentRecord[]>;
 
-  // Extraction methods (new)
+  // Extraction
   updateExtraction(data: ExtractionData): Promise<void>;
   updateExtractionError(id: string, error: string): Promise<void>;
   getUnextractedDocuments(limit: number): Promise<DocumentRecord[]>;
-  getExtractedDocuments(limit: number): Promise<DocumentRecord[]>;
 
-  // Embedding methods (new)
+  // Embedding
   updateEmbedding(data: EmbeddingData): Promise<void>;
   markEmbeddingSkipped(id: string, reason: string): Promise<void>;
   getUnembeddedDocuments(limit: number): Promise<DocumentRecord[]>;
-  getEmbeddedDocuments(limit: number): Promise<DocumentRecord[]>;
-  getDocumentsWithEmbeddings(limit: number): Promise<{ id: string; embedding: number[] }[]>;
 
-  // Classification methods (clustering)
-  updateClassification(data: ClassificationData): Promise<void>;
-  updateClassificationBatch(data: ClassificationData[]): Promise<void>;
-  getUnclassifiedDocuments(limit: number): Promise<DocumentRecord[]>;
-
-  // LLM classification methods
-  updateLLMClassification(data: LLMClassificationData): Promise<void>;
-  updateLLMClassificationBatch(
-    ids: string[],
-    data: Omit<LLMClassificationData, "id">,
-  ): Promise<void>;
+  // Stats
   getLLMClassificationStats(): Promise<{
     classified: number;
     pending: number;
     byType: Record<string, number>;
   }>;
-
-  // Stats
   getExtractionStats(): Promise<{ extracted: number; pending: number; errors: number }>;
   getEmbeddingStats(): Promise<{ embedded: number; pending: number; skipped: number }>;
   getClassificationStats(): Promise<{ classified: number; pending: number; clusters: number }>;
@@ -182,13 +146,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       return rows[0] || null;
     },
 
-    async getDocumentByUrl(url: string) {
-      const rows = await sql<DocumentRecord[]>`
-        SELECT * FROM documents WHERE source_url = ${url}
-      `;
-      return rows[0] || null;
-    },
-
     async getProcessedUrlHashes(opts?: { excludeFailed?: boolean }) {
       const rows = opts?.excludeFailed
         ? await sql<{ h: string }[]>`
@@ -224,27 +181,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       );
     },
 
-    async getUploadedUrls() {
-      const rows = await sql<{ source_url: string }[]>`
-        SELECT source_url FROM documents WHERE status = 'uploaded'
-      `;
-      return new Set(rows.map((r) => r.source_url));
-    },
-
-    async getFailedUrls() {
-      const rows = await sql<{ source_url: string }[]>`
-        SELECT source_url FROM documents WHERE status = 'failed'
-      `;
-      return new Set(rows.map((r) => r.source_url));
-    },
-
-    async getDuplicateUrls() {
-      const rows = await sql<{ source_url: string }[]>`
-        SELECT source_url FROM documents WHERE status = 'duplicate'
-      `;
-      return new Set(rows.map((r) => r.source_url));
-    },
-
     async getUrlsForCrawl(crawlId: string) {
       const rows = await sql<{ source_url: string }[]>`
         SELECT source_url FROM documents WHERE crawl_id = ${crawlId}
@@ -252,21 +188,9 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       return new Set(rows.map((r) => r.source_url));
     },
 
-    async getDocumentsByStatus(status: DocumentStatus, limit = 100) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents WHERE status = ${status} LIMIT ${limit}
-      `;
-    },
-
     async getStats() {
       return sql<{ status: string; count: number }[]>`
         SELECT status, COUNT(*)::int as count FROM documents GROUP BY status
-      `;
-    },
-
-    async getAllDocuments(limit = 1000) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents LIMIT ${limit}
       `;
     },
 
@@ -289,7 +213,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
     },
 
     async updateExtractionError(id: string, error: string) {
-      // Note: We don't set extracted_at so failed docs will be retried
       await sql`
         UPDATE documents SET
           extraction_error = ${error}
@@ -305,16 +228,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
           AND extracted_at IS NULL
           AND extraction_error IS NULL
         ORDER BY uploaded_at ASC
-        LIMIT ${limit}
-      `;
-    },
-
-    async getExtractedDocuments(limit: number) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents
-        WHERE extracted_at IS NOT NULL
-          AND extraction_error IS NULL
-        ORDER BY extracted_at DESC
         LIMIT ${limit}
       `;
     },
@@ -355,89 +268,7 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    async getEmbeddedDocuments(limit: number) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents
-        WHERE embedded_at IS NOT NULL
-        ORDER BY embedded_at DESC
-        LIMIT ${limit}
-      `;
-    },
-
-    async getDocumentsWithEmbeddings(limit: number) {
-      const rows = await sql<{ id: string; embedding: string }[]>`
-        SELECT id, embedding::text FROM documents
-        WHERE embedded_at IS NOT NULL
-        LIMIT ${limit}
-      `;
-      // Parse embedding from pgvector string format '[0.1, 0.2, ...]'
-      return rows.map((r) => ({
-        id: r.id,
-        embedding: JSON.parse(r.embedding) as number[],
-      }));
-    },
-
-    // ==================== Classification Methods ====================
-
-    async updateClassification(data: ClassificationData) {
-      const classifiedAt = data.classified_at || new Date().toISOString();
-      await sql`
-        UPDATE documents SET
-          cluster_id = ${data.cluster_id},
-          cluster_label = ${data.cluster_label || null},
-          classified_at = ${classifiedAt}
-        WHERE id = ${data.id}
-      `;
-    },
-
-    async updateClassificationBatch(data: ClassificationData[]) {
-      const classifiedAt = new Date().toISOString();
-      for (const d of data) {
-        await sql`
-          UPDATE documents SET
-            cluster_id = ${d.cluster_id},
-            cluster_label = ${d.cluster_label || null},
-            classified_at = ${classifiedAt}
-          WHERE id = ${d.id}
-        `;
-      }
-    },
-
-    async getUnclassifiedDocuments(limit: number) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents
-        WHERE embedded_at IS NOT NULL
-          AND classified_at IS NULL
-        ORDER BY embedded_at ASC
-        LIMIT ${limit}
-      `;
-    },
-
-    // ==================== LLM Classification Methods ====================
-
-    async updateLLMClassification(data: LLMClassificationData) {
-      await sql`
-        UPDATE documents SET
-          document_type = ${data.documentType},
-          document_topic = ${data.documentTopic},
-          classification_confidence = ${data.confidence},
-          classification_model = ${data.model}
-        WHERE id = ${data.id}
-      `;
-    },
-
-    async updateLLMClassificationBatch(ids: string[], data: Omit<LLMClassificationData, "id">) {
-      for (const id of ids) {
-        await sql`
-          UPDATE documents SET
-            document_type = ${data.documentType},
-            document_topic = ${data.documentTopic},
-            classification_confidence = ${data.confidence},
-            classification_model = ${data.model}
-          WHERE id = ${id}
-        `;
-      }
-    },
+    // ==================== Stats ====================
 
     async getLLMClassificationStats() {
       const result = await sql<{ classified: number; pending: number }[]>`
@@ -465,8 +296,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
         byType,
       };
     },
-
-    // ==================== Stats ====================
 
     async getExtractionStats() {
       const result = await sql<{ extracted: number; pending: number; errors: number }[]>`

@@ -15,7 +15,6 @@ Usage:
 import argparse
 import json
 import random
-import sys
 from urllib.parse import urlparse
 
 from common import get_db_connection

@@ -3,8 +3,6 @@ pre-commit:
   jobs:
     - name: lint
       run: bun run lint
-    - name: format
-      run: bun run format
     - name: typecheck
       run: bun run typecheck
 

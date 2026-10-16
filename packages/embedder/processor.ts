@@ -1,6 +1,6 @@
+import { formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
 import { GoogleGenAI } from "@google/genai";
 import type { EmbedConfig } from "./types";
-import { formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
 
 // Chunking config (same as eval)
 const CHUNK_SIZE_CHARS = 6000;

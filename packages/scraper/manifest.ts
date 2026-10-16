@@ -1,6 +1,6 @@
-import { SQL } from "bun";
 import { join } from "node:path";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { SQL } from "bun";
 import type { Config } from "./config";
 
 export async function generateManifest(

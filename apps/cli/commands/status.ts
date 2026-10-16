@@ -1,8 +1,9 @@
-import { loadConfig, VERSION } from "@docx-corpus/scraper";
-import { createDb, header, section, keyValue, blank } from "@docx-corpus/shared";
+import { loadConfig } from "@docx-corpus/scraper";
+import { blank, createDb, header, keyValue, section } from "@docx-corpus/shared";
+import { version } from "../package.json";
 
 export async function runStatus(_args: string[]) {
-  header("docx-corpus", VERSION);
+  header("docx-corpus", version);
 
   const config = loadConfig();
   const db = await createDb(config.database.url);

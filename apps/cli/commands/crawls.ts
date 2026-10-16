@@ -1,5 +1,5 @@
-import { loadConfig, hasCloudflareCredentials, listFilteredCrawls } from "@docx-corpus/scraper";
-import { header, section, keyValue, blank } from "@docx-corpus/shared";
+import { hasCloudflareCredentials, listFilteredCrawls, loadConfig } from "@docx-corpus/scraper";
+import { blank, header, keyValue, section } from "@docx-corpus/shared";
 
 const HELP = `
 corpus crawls - List available CDX-filtered crawls from R2
@@ -43,9 +43,7 @@ export async function runCrawls(args: string[]) {
 
   if (crawls.length === 0) {
     console.log("No filtered crawls found in R2.");
-    console.log(
-      "Run the cdx-filter Lambda first: cd apps/cdx-filter && ./invoke-all.sh CC-MAIN-2025-51",
-    );
+    console.log("Run the cdx-filter Lambda first: corpus cdx-filter --latest 1");
     process.exit(0);
   }
 

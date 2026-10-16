@@ -1,4 +1,4 @@
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import type { Config } from "../config";
 
 export interface CdxRecord {
@@ -23,30 +23,36 @@ export async function* streamCdxFromR2(config: Config, crawlId: string): AsyncGe
     },
   });
 
-  const { Contents = [] } = await client.send(
-    new ListObjectsV2Command({
-      Bucket: cloudflare.r2BucketName,
-      Prefix: `cdx-filtered/${crawlId}/`,
-    }),
-  );
-
-  for (const obj of Contents) {
-    if (!obj.Key?.endsWith(".jsonl")) continue;
-
-    const response = await client.send(
-      new GetObjectCommand({
+  let continuationToken: string | undefined;
+  do {
+    const { Contents = [], NextContinuationToken } = await client.send(
+      new ListObjectsV2Command({
         Bucket: cloudflare.r2BucketName,
-        Key: obj.Key,
+        Prefix: `cdx-filtered/${crawlId}/`,
+        ContinuationToken: continuationToken,
       }),
     );
 
-    const text = await response.Body?.transformToString();
-    if (!text) continue;
+    for (const obj of Contents) {
+      if (!obj.Key?.endsWith(".jsonl")) continue;
 
-    for (const line of text.split("\n")) {
-      if (line.trim()) {
-        yield JSON.parse(line) as CdxRecord;
+      const response = await client.send(
+        new GetObjectCommand({
+          Bucket: cloudflare.r2BucketName,
+          Key: obj.Key,
+        }),
+      );
+
+      const text = await response.Body?.transformToString();
+      if (!text) continue;
+
+      for (const line of text.split("\n")) {
+        if (line.trim()) {
+          yield JSON.parse(line) as CdxRecord;
+        }
       }
     }
-  }
+
+    continuationToken = NextContinuationToken;
+  } while (continuationToken);
 }

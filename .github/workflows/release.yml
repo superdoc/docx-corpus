@@ -11,6 +11,7 @@ on:
       - "packages/scraper/**"
       - "packages/shared/**"
       - "packages/extractor/**"
+      - "packages/embedder/**"
 
 jobs:
   release:

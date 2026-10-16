@@ -68,7 +68,6 @@ export function formatProgress(stats: ProgressStats): string[] {
   const lines: string[] = [];
 
   // Line 1: Progress bar with count and percentage
-  const processed = saved + (skipped || 0) + (failed || 0);
   if (total === Infinity) {
     lines.push(
       `━━━━━━━━━━━━━━━━━━━━ ${saved} saved${discovered ? ` (${discovered} scanned)` : ""}`,

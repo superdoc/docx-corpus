@@ -14,7 +14,6 @@ export interface ExtractorConfig {
   extract: {
     inputPrefix: string;
     outputPrefix: string;
-    batchSize: number;
     workers: number;
   };
 }
@@ -38,7 +37,6 @@ export function loadExtractorConfig(): ExtractorConfig {
     extract: {
       inputPrefix: env.EXTRACT_INPUT_PREFIX || "documents",
       outputPrefix: env.EXTRACT_OUTPUT_PREFIX || "extracted",
-      batchSize: parseInt(env.EXTRACT_BATCH_SIZE || "100", 10),
       workers: parseInt(env.EXTRACT_WORKERS || "4", 10),
     },
   };

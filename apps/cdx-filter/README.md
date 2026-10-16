@@ -49,8 +49,8 @@ aws iam attach-role-policy --role-name lambda-cdx-filter \
 ### 2. Deploy
 
 ```bash
-npm install
-npm run build
+bun install   # from the repo root; the Lambda is a workspace
+bun run build
 
 source ../../.env
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
@@ -71,7 +71,7 @@ aws lambda create-function \
 ### 3. Update (after code changes)
 
 ```bash
-npm run build
+bun run build
 aws lambda update-function-code \
   --function-name cdx-filter \
   --region us-east-1 \

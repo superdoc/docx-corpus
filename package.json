@@ -12,7 +12,7 @@
     "db:shell": "docker exec -it docx-corpus-postgres-1 psql -U postgres -d docx_corpus",
     "lint": "biome check",
     "format": "biome format --write",
-    "typecheck": "bun run --filter '*' typecheck && bun run --cwd apps/api typecheck",
+    "typecheck": "bun run --filter '*' typecheck && bun install --cwd apps/api --frozen-lockfile && bun run --cwd apps/api typecheck",
     "test": "bun run --cwd packages/scraper test && bun run --cwd apps/cli test",
     "build": "bun run --cwd packages/scraper build && bun run --cwd apps/cli build",
     "release:cli": "bun run --cwd apps/cli release",

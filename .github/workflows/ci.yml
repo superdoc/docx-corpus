@@ -21,9 +21,6 @@ jobs:
 
       - run: bun install
 
-      - name: Install (api)
-        run: bun install --cwd apps/api --frozen-lockfile
-
       - name: Lint
         run: bun run lint
 

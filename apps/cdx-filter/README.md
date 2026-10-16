@@ -48,8 +48,10 @@ aws iam attach-role-policy --role-name lambda-cdx-filter \
 
 ### 2. Deploy
 
+Run from `apps/cdx-filter`:
+
 ```bash
-bun install   # from the repo root; the Lambda is a workspace
+bun install
 bun run build
 
 source ../../.env

@@ -4,6 +4,7 @@ import {
   createDb,
   createLocalStorage,
   createR2Storage,
+  type DbClient,
   formatDuration,
   formatProgress,
   header,
@@ -28,8 +29,8 @@ function md5Url(url: string): string {
   return hasher.digest("hex");
 }
 
-interface ProcessContext {
-  db: Awaited<ReturnType<typeof createDb>>;
+export interface ProcessContext {
+  db: Pick<DbClient, "recordOutcome" | "getDocument">;
   storage: Storage;
   config: Config;
   crawlId: string;
@@ -38,24 +39,27 @@ interface ProcessContext {
   processedHashes: Set<string>;
   force?: boolean;
   onError?: (status: number, url: string, message: string) => void;
+  fetch?: typeof fetchWarcRecord;
 }
 
-async function processRecord(record: CdxRecord, ctx: ProcessContext) {
+export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const { db, storage, config, crawlId, stats, rateLimiter, processedHashes, onError } = ctx;
+  const fetch = ctx.fetch ?? fetchWarcRecord;
+  // Failures and duplicates store no content, so their IDs are scoped to the URL and crawl.
+  const urlCrawlHash = await computeHash(new TextEncoder().encode(record.url + crawlId));
 
   // Download from WARC
   let result: WarcResult;
   try {
-    result = await fetchWarcRecord(record, {
+    result = await fetch(record, {
       timeoutMs: config.crawl.timeoutMs,
       rateLimiter,
       onError,
     });
   } catch (err) {
     stats.failed++;
-    const urlHash = await computeHash(new TextEncoder().encode(record.url));
-    await db.upsertDocument({
-      id: `failed-${urlHash}`,
+    await db.recordOutcome({
+      id: `failed-${urlCrawlHash}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -65,11 +69,6 @@ async function processRecord(record: CdxRecord, ctx: ProcessContext) {
     return;
   }
 
-  // Clean up any previous failed-* record for this URL in THIS crawl (from a prior failed attempt)
-  const urlHash = await computeHash(new TextEncoder().encode(record.url));
-  const crawlScopedHash = await computeHash(new TextEncoder().encode(record.url + crawlId));
-  await db.deleteDocument(`failed-${urlHash}`, crawlId);
-
   // Mark URL as processed so duplicate CDX entries are skipped
   processedHashes.add(md5Url(record.url));
 
@@ -77,9 +76,8 @@ async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const validation = validateDocx(result.content);
   if (!validation.isValid) {
     stats.failed++;
-    const hash = await computeHash(result.content);
-    await db.upsertDocument({
-      id: hash,
+    await db.recordOutcome({
+      id: `failed-${urlCrawlHash}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -98,8 +96,8 @@ async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const existingByHash = await db.getDocument(hash);
   if (existingByHash && existingByHash.source_url !== record.url) {
     stats.skipped++;
-    await db.upsertDocument({
-      id: `dup-${crawlScopedHash}`,
+    await db.recordOutcome({
+      id: `dup-${urlCrawlHash}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -119,7 +117,7 @@ async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   }
 
   // Update database
-  await db.upsertDocument({
+  await db.recordOutcome({
     id: hash,
     source_url: record.url,
     crawl_id: crawlId,

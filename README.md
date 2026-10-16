@@ -247,6 +247,12 @@ docker compose up -d
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/docx_corpus \
   bun run corpus status
 
+# Run tests, including the scraper's database tests, against a separate
+# database: they delete every row in `documents`
+docker exec docx-corpus-postgres-1 createdb -U postgres docx_corpus_test
+docker exec -i docx-corpus-postgres-1 psql -U postgres -d docx_corpus_test < db/schema.sql
+TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/docx_corpus_test bun test
+
 # Run API locally
 cd apps/api
 npx wrangler dev

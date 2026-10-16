@@ -1,13 +1,22 @@
-<img width="400" alt="docx-corpus" src="https://github.com/user-attachments/assets/ea105e9e-00d0-4d48-a2a4-006cc4e89848" />
+<p align="center">
+  <img src="https://docxcorp.us/apple-touch-icon.png" width="80" height="80" alt="docx-corpus">
+</p>
 
-[![CLI](https://img.shields.io/github/v/release/superdoc/docx-corpus?filter=cli-v*&label=cli)](https://github.com/superdoc/docx-corpus/releases)
-[![CDX Filter](https://img.shields.io/github/v/release/superdoc/docx-corpus?filter=cdx-filter-v*&label=cdx-filter)](https://github.com/superdoc/docx-corpus/releases)
-[![codecov](https://codecov.io/gh/superdoc/docx-corpus/graph/badge.svg)](https://codecov.io/gh/superdoc/docx-corpus)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+<h1 align="center">docx-corpus</h1>
 
-The largest open corpus of classified Word documents: 736K+ real `.docx` files from the public web, labeled with 10 document types and 9 topics across 75 languages.
+<p align="center">
+  Every Word document on the public web. Classified and open.
+  <br>
+  736K+ real <code>.docx</code> files, labeled with 10 document types and 9 topics across 75 languages.
+  <br>
+  <a href="https://docxcorp.us">docxcorp.us</a> · <a href="https://huggingface.co/datasets/superdoc-dev/docx-corpus">Hugging Face</a> · <a href="https://api.docxcorp.us/stats">API</a>
+</p>
 
-**[docxcorp.us](https://docxcorp.us)** · **[Hugging Face](https://huggingface.co/datasets/superdoc-dev/docx-corpus)** · **[API](https://api.docxcorp.us/stats)**
+<p align="center">
+  <a href="https://github.com/superdoc/docx-corpus/releases"><img src="https://img.shields.io/github/v/release/superdoc/docx-corpus?filter=cli-v*&label=cli" alt="CLI"></a>
+  <a href="https://github.com/superdoc/docx-corpus/releases"><img src="https://img.shields.io/github/v/release/superdoc/docx-corpus?filter=cdx-filter-v*&label=cdx-filter" alt="CDX Filter"></a>
+  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+</p>
 
 > [!IMPORTANT]
 > Documents scraped before [`477d1b9`](https://github.com/superdoc/docx-corpus/commit/477d1b9) can end with 4 extra bytes after the ZIP data, which makes Word for Mac report unreadable content ([#8](https://github.com/superdoc/docx-corpus/issues/8)). New scrapes are fixed. To check or repair older local copies, run `python3 scripts/fix_trailing_warc_bytes.py`.

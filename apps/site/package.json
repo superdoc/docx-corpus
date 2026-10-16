@@ -11,9 +11,9 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.0",
-    "astro": "^6.1.0"
+    "astro": "^7.4.0"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.4"
+    "@astrojs/check": "^0.9.10"
   }
 }

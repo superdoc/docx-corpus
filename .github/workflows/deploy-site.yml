@@ -42,10 +42,9 @@ jobs:
 
           # HTML pages and the three metadata files share a 5-minute edge TTL
           # with stale-while-revalidate for 1 hour. A Cloudflare Cache Rule on
-          # the zone enables caching for these specific paths (extensionless
-          # HTML isn't cached by Cloudflare default); see infrastructure notes
-          # in apps/site/README.md. Static assets (favicons, og-image, logo)
-          # keep Cloudflare's default static-asset cache behavior - no header.
+          # the zone enables caching for these paths, since Cloudflare doesn't
+          # cache extensionless HTML by default; add new HTML routes to that rule.
+          # Static assets (favicons, og-image, logo) keep the default behavior.
           CACHE_HTML="public, max-age=300, stale-while-revalidate=3600"
 
           # Non-HTML assets: copy the finite Astro output directly. Do not use

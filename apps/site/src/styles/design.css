@@ -1,4 +1,4 @@
-/* docx-corpus design system - Option A (Restrained) - locked per brand.md */
+/* docx-corpus design system, per brand.md > Visual */
 
 :root {
   --coral: #F97B6D;        /* Decorative accent: bar fills, badge backgrounds, decorative borders. */
@@ -278,7 +278,7 @@ body.wide .grid-cell:nth-child(5n+1) { padding-left: 0; }
    or other reading content. Constrains line length to ~640px (~70-80ch) for
    readable rhythm, while the surrounding page shell stays 960px so tables,
    grids, code blocks, and data surfaces can use the full shell width.
-   See brand.md > Layout: "Page shell 960px; prose measure 640px." */
+   See brand.md > Layout and components. */
 .prose { max-width: 640px; }
 
 /* Tables that don't compress well on narrow viewports get a min-width so

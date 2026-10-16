@@ -12,7 +12,7 @@
     "db:shell": "docker exec -it docx-corpus-postgres-1 psql -U postgres -d docx_corpus",
     "lint": "biome check",
     "format": "biome format --write",
-    "typecheck": "bun run --cwd packages/scraper typecheck && bun run --cwd packages/extractor typecheck && bun run --cwd apps/cli typecheck && bun run --cwd apps/cdx-filter typecheck",
+    "typecheck": "bun run --filter '*' typecheck && bun run --cwd apps/api typecheck",
     "test": "bun run --cwd packages/scraper test && bun run --cwd apps/cli test",
     "build": "bun run --cwd packages/scraper build && bun run --cwd apps/cli build",
     "release:cli": "bun run --cwd apps/cli release",
@@ -23,6 +23,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
-    "lefthook": "^1.11.13"
+    "@types/bun": "1.3.10",
+    "lefthook": "^1.11.13",
+    "typescript": "^6.0.3"
   }
 }

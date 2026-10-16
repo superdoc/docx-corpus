@@ -11,9 +11,5 @@
   },
   "dependencies": {
     "@docx-corpus/shared": "workspace:*"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5.9.3"
   }
 }

@@ -5,11 +5,10 @@
   "exports": {
     ".": "./index.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.971.0"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "typescript": "^5.9.3"
   }
 }

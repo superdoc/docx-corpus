@@ -1,13 +1,9 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
-    "outDir": "dist",
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "declaration": false
+    "module": "commonjs",
+    "types": ["node"],
+    "outDir": "dist"
   },
   "include": ["index.ts"]
 }

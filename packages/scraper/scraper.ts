@@ -30,7 +30,7 @@ function md5Url(url: string): string {
 }
 
 export interface ProcessContext {
-  db: Pick<DbClient, "recordOutcome" | "getDocument">;
+  db: Pick<DbClient, "recordOutcome" | "getUploadedDocument">;
   storage: Storage;
   config: Config;
   crawlId: string;
@@ -93,7 +93,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const hash = await computeHash(result.content);
 
   // Check if already exists by hash (different URL, same file content)
-  const existingByHash = await db.getDocument(hash);
+  const existingByHash = await db.getUploadedDocument(hash);
   if (existingByHash && existingByHash.source_url !== record.url) {
     stats.skipped++;
     await db.recordOutcome({

@@ -72,7 +72,8 @@ export interface DbClient {
   // Scraping
   // Writes one CDX URL's outcome in its crawl, replacing that URL's earlier failed rows.
   recordOutcome(doc: Partial<DocumentRecord> & OutcomeKey): Promise<void>;
-  getDocument(id: string): Promise<DocumentRecord | null>;
+  // An uploaded row for this content hash; failed rows have nothing in R2.
+  getUploadedDocument(id: string): Promise<DocumentRecord | null>;
   getProcessedUrlHashes(opts?: { excludeFailed?: boolean }): Promise<Set<string>>;
   upsertDuplicateBatch(
     records: { id: string; sourceUrl: string; crawlId: string; filename: string }[],
@@ -153,9 +154,9 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       });
     },
 
-    async getDocument(id: string) {
+    async getUploadedDocument(id: string) {
       const rows = await sql<DocumentRecord[]>`
-        SELECT * FROM documents WHERE id = ${id}
+        SELECT * FROM documents WHERE id = ${id} AND status = 'uploaded'
       `;
       return rows[0] || null;
     },

@@ -165,6 +165,31 @@ describe.skipIf(!url)("processRecord failed records", () => {
     expect(await rows()).toEqual([`C1 uploaded ${URL_A}`]);
   });
 
+  test("after migration 007, a failed row from older scrapes neither blocks nor loses to an upload", async () => {
+    // Older scrapes stored failed rows under the content hash, the ID an upload of those bytes uses.
+    const hash = new Bun.CryptoHasher("sha256").update(DOCX).digest("hex");
+    await sql`
+      INSERT INTO documents (id, source_url, crawl_id, status, is_valid_docx)
+      VALUES (${hash}, ${URL_B}, 'C0', 'failed', true)
+    `;
+    await sql.file(
+      `${import.meta.dir}/../../../db/migrations/007_rekey_content_hash_failed_rows.sql`,
+    );
+    await run(URL_A, "C1", returns(DOCX));
+    expect(await rows()).toEqual([`C0 failed ${URL_B}`, `C1 uploaded ${URL_A}`]);
+  });
+
+  test("valid content is not a duplicate of a failed row with the same content hash", async () => {
+    // Before migration 007 the failed row's ID is the content hash, which content dedup looked up.
+    const hash = new Bun.CryptoHasher("sha256").update(DOCX).digest("hex");
+    await sql`
+      INSERT INTO documents (id, source_url, crawl_id, status, is_valid_docx)
+      VALUES (${hash}, ${URL_B}, 'C0', 'failed', true)
+    `;
+    await run(URL_A, "C1", returns(DOCX));
+    expect(await rows()).toContain(`C1 uploaded ${URL_A}`);
+  });
+
   test("concurrent failures and one success leave only the success", async () => {
     await Promise.all([
       run(URL_A, "C1", fails),

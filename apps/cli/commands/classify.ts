@@ -1,5 +1,4 @@
-import { loadConfig } from "@docx-corpus/scraper";
-import { blank, createDb, header, keyValue, section } from "@docx-corpus/shared";
+import { blank, createDb, header, keyValue, loadDatabaseUrl, section } from "@docx-corpus/shared";
 import { resolve } from "path";
 
 interface ParsedFlags {
@@ -96,8 +95,7 @@ export async function runClassify(args: string[]) {
   }
 
   const flags = parseFlags(args);
-  const config = loadConfig();
-  const db = await createDb(config.database.url);
+  const db = await createDb(loadDatabaseUrl());
 
   try {
     // Show current classification state
@@ -150,10 +148,6 @@ export async function runClassify(args: string[]) {
     const proc = Bun.spawn(pythonArgs, {
       cwd: scriptDir,
       stdio: ["inherit", "inherit", "inherit"],
-      env: {
-        ...process.env,
-        DATABASE_URL: config.database.url,
-      },
     });
 
     const exitCode = await proc.exited;

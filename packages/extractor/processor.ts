@@ -1,8 +1,22 @@
 import { mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
-import type { ExtractConfig } from "./types";
+import {
+  type DbClient,
+  formatProgress,
+  type Storage,
+  writeMultiLineProgress,
+} from "@docx-corpus/shared";
+
+export interface ExtractConfig {
+  db: DbClient;
+  storage: Storage;
+  inputPrefix: string;
+  outputPrefix: string;
+  /** Documents to process; all pending when unset. */
+  limit?: number;
+  workers: number;
+}
 
 const PYTHON_DIR = join(dirname(import.meta.path), "python");
 const PYTHON_PATH = join(PYTHON_DIR, ".venv", "bin", "python");
@@ -125,7 +139,7 @@ export async function processDirectory(
   config: ExtractConfig,
   verbose: boolean = false,
 ): Promise<void> {
-  const { db, outputPrefix, batchSize } = config;
+  const { db, outputPrefix, limit } = config;
 
   // Get extraction stats from database
   const stats = await db.getExtractionStats();
@@ -138,7 +152,7 @@ export async function processDirectory(
 
   // Get unextracted documents from database
   console.log(`Querying database for unextracted documents...`);
-  const documents = await db.getUnextractedDocuments(batchSize);
+  const documents = await db.getUnextractedDocuments(limit);
 
   if (documents.length === 0) {
     console.log(`No unextracted documents found`);

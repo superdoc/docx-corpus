@@ -77,12 +77,12 @@ export interface DbClient {
   // Extraction
   updateExtraction(data: ExtractionData): Promise<void>;
   updateExtractionError(id: string, error: string): Promise<void>;
-  getUnextractedDocuments(limit: number): Promise<{ id: string }[]>;
+  getUnextractedDocuments(limit?: number): Promise<{ id: string }[]>;
 
   // Embedding
   updateEmbedding(data: EmbeddingData): Promise<void>;
   markEmbeddingSkipped(id: string, reason: string): Promise<void>;
-  getUnembeddedDocuments(limit: number): Promise<{ id: string }[]>;
+  getUnembeddedDocuments(limit?: number): Promise<{ id: string }[]>;
 
   // Stats
   getLLMClassificationStats(): Promise<{
@@ -227,7 +227,7 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    async getUnextractedDocuments(limit: number) {
+    async getUnextractedDocuments(limit?: number) {
       // Get docs that haven't been extracted yet (excludes previously failed ones)
       return sql<{ id: string }[]>`
         SELECT id FROM documents
@@ -235,7 +235,7 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
           AND extracted_at IS NULL
           AND extraction_error IS NULL
         ORDER BY uploaded_at ASC
-        LIMIT ${limit}
+        LIMIT ${limit ?? null}
       `;
     },
 
@@ -264,14 +264,14 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    async getUnembeddedDocuments(limit: number) {
+    async getUnembeddedDocuments(limit?: number) {
       return sql<{ id: string }[]>`
         SELECT id FROM documents
         WHERE extracted_at IS NOT NULL
           AND extraction_error IS NULL
           AND embedded_at IS NULL
         ORDER BY extracted_at ASC
-        LIMIT ${limit}
+        LIMIT ${limit ?? null}
       `;
     },
 

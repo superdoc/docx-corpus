@@ -1,12 +1,10 @@
-import { loadConfig } from "@docx-corpus/scraper";
-import { blank, createDb, header, keyValue, section } from "@docx-corpus/shared";
+import { blank, createDb, header, keyValue, loadDatabaseUrl, section } from "@docx-corpus/shared";
 import { version } from "../package.json";
 
 export async function runStatus(_args: string[]) {
   header("docx-corpus", version);
 
-  const config = loadConfig();
-  const db = await createDb(config.database.url);
+  const db = await createDb(loadDatabaseUrl());
 
   try {
     // Scraping stats

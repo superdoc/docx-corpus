@@ -1,10 +1,5 @@
-import {
-  type ExtractConfig,
-  hasCloudflareCredentials,
-  loadExtractorConfig,
-  processDirectory,
-} from "@docx-corpus/extractor";
-import { createDb, createLocalStorage, createR2Storage } from "@docx-corpus/shared";
+import { type ExtractConfig, processDirectory } from "@docx-corpus/extractor";
+import { createDb, loadDatabaseUrl, loadStorage } from "@docx-corpus/shared";
 
 interface ParsedFlags {
   batchSize?: number;
@@ -85,47 +80,25 @@ export async function runExtract(args: string[]) {
   }
 
   const flags = parseFlags(args);
-  const envConfig = loadExtractorConfig();
-
-  // Validate database URL
-  if (!envConfig.database.url) {
-    console.error("Error: DATABASE_URL environment variable is required");
-    process.exit(1);
-  }
-
-  const useCloud = hasCloudflareCredentials(envConfig);
-
-  // Create database client
-  const db = await createDb(envConfig.database.url);
-
-  // Create storage based on credentials
-  const storage = useCloud
-    ? createR2Storage({
-        accountId: envConfig.cloudflare.accountId,
-        accessKeyId: envConfig.cloudflare.r2AccessKeyId,
-        secretAccessKey: envConfig.cloudflare.r2SecretAccessKey,
-        bucket: envConfig.cloudflare.r2BucketName,
-      })
-    : createLocalStorage(envConfig.storage.localPath);
+  const { storage, location } = loadStorage();
+  const db = await createDb(loadDatabaseUrl());
 
   const config: ExtractConfig = {
     db,
     storage,
-    inputPrefix: envConfig.extract.inputPrefix,
-    outputPrefix: envConfig.extract.outputPrefix,
-    batchSize: flags.batchSize ?? 1000000,
-    workers: flags.workers ?? envConfig.extract.workers,
+    inputPrefix: process.env.EXTRACT_INPUT_PREFIX || "documents",
+    outputPrefix: process.env.EXTRACT_OUTPUT_PREFIX || "extracted",
+    limit: flags.batchSize,
+    workers: flags.workers ?? (parseInt(process.env.EXTRACT_WORKERS || "", 10) || 4),
   };
 
   console.log("Text Extractor");
   console.log("==============");
-  console.log(
-    `Storage: ${useCloud ? `R2 (${envConfig.cloudflare.r2BucketName})` : `local (${envConfig.storage.localPath})`}`,
-  );
+  console.log(`Storage: ${location}`);
   console.log(`Input:   ${config.inputPrefix}/`);
   console.log(`Output:  ${config.outputPrefix}/`);
   console.log(`Workers: ${config.workers}`);
-  console.log(`Batch:   ${config.batchSize >= 1000000 ? "all" : config.batchSize}`);
+  console.log(`Batch:   ${config.limit ?? "all"}`);
   console.log("");
 
   try {

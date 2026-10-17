@@ -1,5 +1,5 @@
-import { ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
-import type { Config } from "../config";
+import { ListObjectsV2Command } from "@aws-sdk/client-s3";
+import { createR2Client, type R2Config } from "@docx-corpus/shared";
 
 export interface FilteredCrawl {
   id: string;
@@ -11,17 +11,8 @@ export interface FilteredCrawl {
  * List all CDX-filtered crawls available in R2.
  * Returns crawls sorted newest-first.
  */
-export async function listFilteredCrawls(config: Config): Promise<FilteredCrawl[]> {
-  const { cloudflare } = config;
-
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${cloudflare.accountId}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: cloudflare.r2AccessKeyId,
-      secretAccessKey: cloudflare.r2SecretAccessKey,
-    },
-  });
+export async function listFilteredCrawls(r2: R2Config): Promise<FilteredCrawl[]> {
+  const client = createR2Client(r2);
 
   const crawls = new Map<string, FilteredCrawl>();
   let continuationToken: string | undefined;
@@ -29,7 +20,7 @@ export async function listFilteredCrawls(config: Config): Promise<FilteredCrawl[
   do {
     const response = await client.send(
       new ListObjectsV2Command({
-        Bucket: cloudflare.r2BucketName,
+        Bucket: r2.bucket,
         Prefix: "cdx-filtered/",
         ContinuationToken: continuationToken,
       }),

@@ -1,6 +1,20 @@
-import { formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
+import {
+  type DbClient,
+  formatProgress,
+  type Storage,
+  writeMultiLineProgress,
+} from "@docx-corpus/shared";
 import { GoogleGenAI } from "@google/genai";
-import type { EmbedConfig } from "./types";
+
+export interface EmbedConfig {
+  db: DbClient;
+  storage: Storage;
+  apiKey: string;
+  inputPrefix: string;
+  /** Documents to process; all pending when unset. */
+  limit?: number;
+  concurrency: number;
+}
 
 // Chunking config (same as eval)
 const CHUNK_SIZE_CHARS = 6000;
@@ -109,12 +123,7 @@ export async function processEmbeddings(
   config: EmbedConfig,
   verbose: boolean = false,
 ): Promise<void> {
-  const { db, storage, inputPrefix, batchSize, concurrency } = config;
-
-  const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    throw new Error("GOOGLE_API_KEY environment variable required");
-  }
+  const { db, storage, apiKey, inputPrefix, limit, concurrency } = config;
 
   // Initialize Google GenAI client and rate limiter
   const ai = new GoogleGenAI({ apiKey });
@@ -128,7 +137,7 @@ export async function processEmbeddings(
 
   // Get unembedded documents from database
   console.log(`Querying database for unembedded documents...`);
-  const documents = await db.getUnembeddedDocuments(batchSize);
+  const documents = await db.getUnembeddedDocuments(limit);
 
   if (documents.length === 0) {
     console.log("No new documents to embed");

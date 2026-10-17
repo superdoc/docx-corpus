@@ -82,7 +82,7 @@ Set these in `.env`. See [`.env.example`](.env.example) for the rest.
 | Variable | Needed for |
 |---|---|
 | `DATABASE_URL` | Every command |
-| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | `crawls`, `cdx-filter` without `--crawl`, and storing files in R2. Without them, files go to `STORAGE_PATH` (default `./corpus`). |
+| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | `scrape`, `crawls`, and `cdx-filter` without `--crawl`. Without them, `extract` and `embed` use `STORAGE_PATH` (default `./corpus`). |
 | `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `cdx-filter`. Needs `lambda:InvokeFunction` on the `cdx-filter` function. |
 | `GOOGLE_API_KEY` | `embed` |
 | `ANTHROPIC_API_KEY` | Labeling training data for classification |
@@ -116,7 +116,7 @@ TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/docx_corpus_test b
 
 ## Docker
 
-The image idles so you can `docker exec` into it for long runs. Its `.env` needs a `DATABASE_URL` the container can reach (`localhost` is the container itself). Without R2 credentials, files go to `/app/corpus`, so mount a volume there.
+The image idles so you can `docker exec` into it for long runs. Its `.env` needs a `DATABASE_URL` the container can reach (`localhost` is the container itself). Without R2 credentials, `extract` and `embed` use `/app/corpus`, so mount a volume there.
 
 ```bash
 docker build -t docx-corpus .

@@ -6,12 +6,8 @@ import {
 } from "@aws-sdk/client-s3";
 import type { R2Config, Storage } from "./types";
 
-/**
- * Create a Cloudflare R2 storage adapter.
- * Keys are S3 object keys (e.g., "documents/abc123.docx").
- */
-export function createR2Storage(config: R2Config): Storage {
-  const client = new S3Client({
+export function createR2Client(config: R2Config): S3Client {
+  return new S3Client({
     region: "auto",
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
     credentials: {
@@ -19,6 +15,14 @@ export function createR2Storage(config: R2Config): Storage {
       secretAccessKey: config.secretAccessKey,
     },
   });
+}
+
+/**
+ * Create a Cloudflare R2 storage adapter.
+ * Keys are S3 object keys (e.g., "documents/abc123.docx").
+ */
+export function createR2Storage(config: R2Config): Storage {
+  const client = createR2Client(config);
 
   const bucket = config.bucket;
 

@@ -1,11 +1,5 @@
-import {
-  getAllCrawlIds,
-  hasCloudflareCredentials,
-  invokeCdxFilter,
-  listFilteredCrawls,
-  loadConfig,
-} from "@docx-corpus/scraper";
-import { blank, header, keyValue, section } from "@docx-corpus/shared";
+import { getAllCrawlIds, invokeCdxFilter, listFilteredCrawls } from "@docx-corpus/scraper";
+import { blank, header, keyValue, loadR2Config, section } from "@docx-corpus/shared";
 
 const HELP = `
 corpus cdx-filter - Filter Common Crawl indexes for .docx URLs via Lambda
@@ -48,7 +42,6 @@ export async function runCdxFilter(args: string[]) {
     process.exit(0);
   }
 
-  const config = loadConfig();
   const crawlId = parseFlag(args, "--crawl");
   const filterAll = args.includes("--all");
   const latest = parseFlag(args, "--latest");
@@ -81,13 +74,14 @@ export async function runCdxFilter(args: string[]) {
   }
 
   // Compare against what's already filtered in R2
-  if (!hasCloudflareCredentials(config)) {
+  const r2 = loadR2Config();
+  if (!r2) {
     console.error("Cloudflare R2 credentials required to check filtered crawls");
     console.error("Set CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY");
     process.exit(1);
   }
 
-  const filtered = await listFilteredCrawls(config);
+  const filtered = await listFilteredCrawls(r2);
   const filteredIds = new Set(filtered.map((c) => c.id));
   const missing = allCrawlIds.filter((id) => !filteredIds.has(id));
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import { ConfigError } from "@docx-corpus/shared";
 import { runCdxFilter } from "./commands/cdx-filter";
 import { runClassify } from "./commands/classify";
 import { runCrawls } from "./commands/crawls";
@@ -88,6 +89,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Error:", err);
+  console.error(err instanceof ConfigError ? `Error: ${err.message}` : err);
   process.exit(1);
 });

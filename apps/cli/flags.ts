@@ -20,9 +20,9 @@ export function parseFlags<T extends ParseArgsOptionsConfig>(
   }
 }
 
-/** A positive integer from a flag or environment variable, or undefined when it is unset. */
+/** A positive integer, or undefined when the value is absent. */
 export function positiveInt(value: string | undefined, name: string): number | undefined {
-  if (value === undefined || value === "") return undefined;
+  if (value === undefined) return undefined;
   const n = Number(value);
   if (!Number.isInteger(n) || n < 1) {
     throw new ConfigError(`${name} must be a positive integer, got "${value}"`);

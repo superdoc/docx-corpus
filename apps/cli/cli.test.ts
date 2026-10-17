@@ -46,14 +46,13 @@ describe("parseFlags", () => {
 });
 
 describe("positiveInt", () => {
-  test("parses positive integers and treats unset or empty as absent", () => {
+  test("parses positive integers and passes through an absent value", () => {
     expect(positiveInt("50", "--batch")).toBe(50);
     expect(positiveInt(undefined, "--batch")).toBeUndefined();
-    expect(positiveInt("", "EXTRACT_WORKERS")).toBeUndefined();
   });
 
-  test("rejects zero, negatives, and non-numbers", () => {
-    for (const value of ["0", "-1", "abc", "1.5"]) {
+  test("rejects empty, zero, negatives, and non-numbers", () => {
+    for (const value of ["", "0", "-1", "abc", "1.5"]) {
       expect(() => positiveInt(value, "--batch")).toThrow("--batch must be a positive integer");
     }
   });

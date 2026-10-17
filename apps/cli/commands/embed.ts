@@ -59,7 +59,7 @@ export async function runEmbed(args: string[]) {
     apiKey,
     inputPrefix: process.env.EMBED_INPUT_PREFIX || "extracted",
     limit: positiveInt(flags.batch, "--batch"),
-    concurrency: positiveInt(process.env.EMBED_CONCURRENCY, "EMBED_CONCURRENCY") ?? 20,
+    concurrency: positiveInt(process.env.EMBED_CONCURRENCY || undefined, "EMBED_CONCURRENCY") ?? 20,
   };
 
   console.log("Document Embedder");

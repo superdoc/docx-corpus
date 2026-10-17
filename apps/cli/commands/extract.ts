@@ -55,7 +55,7 @@ export async function runExtract(args: string[]) {
     limit: positiveInt(flags.batch, "--batch"),
     workers:
       positiveInt(flags.workers, "--workers") ??
-      positiveInt(process.env.EXTRACT_WORKERS, "EXTRACT_WORKERS") ??
+      positiveInt(process.env.EXTRACT_WORKERS || undefined, "EXTRACT_WORKERS") ??
       4,
   };
 

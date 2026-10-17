@@ -12,7 +12,7 @@ jobs:
 
     services:
       postgres:
-        image: pgvector/pgvector:pg16
+        image: postgres:16-bookworm
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: docx_corpus

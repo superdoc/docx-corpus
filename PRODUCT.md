@@ -6,7 +6,7 @@ A public dataset and pipeline that collects, describes, and shares DOCX files fr
 
 - Finding, downloading, validating, and deduplicating documents.
 - Storing files and extracted data with stable IDs and metadata.
-- Text extraction, language detection, embeddings, and classification.
+- Text extraction, language detection, and classification.
 - Publishing the corpus through downloads, the API, and Hugging Face.
 
 ## Does not own

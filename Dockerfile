@@ -14,7 +14,6 @@ COPY package.json bun.lock ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/scraper/package.json ./packages/scraper/
 COPY packages/extractor/package.json ./packages/extractor/
-COPY packages/embedder/package.json ./packages/embedder/
 COPY apps/cdx-filter/package.json ./apps/cdx-filter/
 COPY apps/cli/package.json ./apps/cli/
 COPY apps/site/package.json ./apps/site/

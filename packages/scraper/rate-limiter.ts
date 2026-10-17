@@ -19,11 +19,7 @@ export interface RateLimiterConfig {
   successStreakThreshold?: number; // Successes before recovery (default: 100)
 }
 
-export function createRateLimiter(config: RateLimiterConfig | number): RateLimiter {
-  // Support legacy single-number signature
-  const opts: RateLimiterConfig =
-    typeof config === "number" ? { initialRps: config, minRps: 10, maxRps: 200 } : config;
-
+export function createRateLimiter(config: RateLimiterConfig): RateLimiter {
   const {
     initialRps,
     minRps,
@@ -31,7 +27,7 @@ export function createRateLimiter(config: RateLimiterConfig | number): RateLimit
     backoffFactor = 0.8,
     recoveryFactor = 1.05,
     successStreakThreshold = 100,
-  } = opts;
+  } = config;
 
   let currentRps = initialRps;
   let tokens = currentRps;

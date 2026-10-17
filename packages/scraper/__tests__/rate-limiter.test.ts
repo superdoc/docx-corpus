@@ -4,6 +4,31 @@ import { createRateLimiter } from "../rate-limiter";
 const limiterAt = (rps: number) => createRateLimiter({ initialRps: rps, minRps: rps, maxRps: rps });
 
 describe("createRateLimiter", () => {
+  // Each check pairs a fast path with a wait, so a limiter that never waits fails too.
+  test("starts with a full bucket, then waits", async () => {
+    const limiter = limiterAt(5);
+    const start = Date.now();
+    for (let i = 0; i < 5; i++) await limiter.acquire();
+    expect(Date.now() - start).toBeLessThan(100);
+
+    await limiter.acquire();
+    expect(Date.now() - start).toBeGreaterThanOrEqual(150);
+  });
+
+  test("limiters do not share tokens", async () => {
+    const a = limiterAt(2);
+    const b = limiterAt(2);
+    await a.acquire();
+    await a.acquire();
+
+    const start = Date.now();
+    await b.acquire();
+    expect(Date.now() - start).toBeLessThan(50);
+
+    await a.acquire();
+    expect(Date.now() - start).toBeGreaterThanOrEqual(400);
+  });
+
   test("waits when tokens exhausted", async () => {
     const rate = 2;
     const limiter = limiterAt(rate);

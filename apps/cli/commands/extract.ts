@@ -52,10 +52,11 @@ export async function runExtract(args: string[]) {
     storage,
     inputPrefix: process.env.EXTRACT_INPUT_PREFIX || "documents",
     outputPrefix: process.env.EXTRACT_OUTPUT_PREFIX || "extracted",
-    limit: positiveInt(flags.batch, "batch"),
+    limit: positiveInt(flags.batch, "--batch"),
     workers:
-      positiveInt(flags.workers, "workers") ??
-      (parseInt(process.env.EXTRACT_WORKERS || "", 10) || 4),
+      positiveInt(flags.workers, "--workers") ??
+      positiveInt(process.env.EXTRACT_WORKERS, "EXTRACT_WORKERS") ??
+      4,
   };
 
   console.log("Text Extractor");

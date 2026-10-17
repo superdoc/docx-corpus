@@ -37,17 +37,24 @@ describe("parseFlags", () => {
     expect(() => parseFlags(["--crawll", "3"], "", options)).toThrow("Unknown option '--crawll'");
     expect(() => parseFlags(["--crawl"], "", options)).toThrow("argument missing");
   });
+
+  test("reports multi-line parseArgs errors on one line", () => {
+    expect(() => parseFlags(["--crawl", "--force"], "", options)).toThrow(
+      expect.objectContaining({ message: expect.not.stringContaining("\n") }),
+    );
+  });
 });
 
 describe("positiveInt", () => {
-  test("parses positive integers and passes through an absent flag", () => {
-    expect(positiveInt("50", "batch")).toBe(50);
-    expect(positiveInt(undefined, "batch")).toBeUndefined();
+  test("parses positive integers and treats unset or empty as absent", () => {
+    expect(positiveInt("50", "--batch")).toBe(50);
+    expect(positiveInt(undefined, "--batch")).toBeUndefined();
+    expect(positiveInt("", "EXTRACT_WORKERS")).toBeUndefined();
   });
 
   test("rejects zero, negatives, and non-numbers", () => {
-    for (const value of ["0", "-1", "abc", "1.5", ""]) {
-      expect(() => positiveInt(value, "batch")).toThrow("--batch must be a positive integer");
+    for (const value of ["0", "-1", "abc", "1.5"]) {
+      expect(() => positiveInt(value, "--batch")).toThrow("--batch must be a positive integer");
     }
   });
 });

@@ -41,8 +41,8 @@ export async function runCdxFilter(args: string[]) {
     concurrency: { type: "string", default: "10" },
   });
   const { crawl: crawlId, all: filterAll, region } = flags;
-  const latest = positiveInt(flags.latest, "latest");
-  const concurrency = positiveInt(flags.concurrency, "concurrency");
+  const latest = positiveInt(flags.latest, "--latest");
+  const concurrency = positiveInt(flags.concurrency, "--concurrency");
 
   header("docx-corpus", "cdx-filter");
 

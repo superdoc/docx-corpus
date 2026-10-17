@@ -41,8 +41,8 @@ export async function runClassify(args: string[]) {
     workers: { type: "string", short: "w", default: "20" },
     gpu: { type: "string", default: "a10g" },
   });
-  const batchSize = positiveInt(flags["batch-size"], "batch-size");
-  const workers = positiveInt(flags.workers, "workers");
+  const batchSize = positiveInt(flags["batch-size"], "--batch-size");
+  const workers = positiveInt(flags.workers, "--workers");
   const db = await createDb(loadDatabaseUrl());
 
   try {

@@ -14,16 +14,18 @@ export function parseFlags<T extends ParseArgsOptionsConfig>(
   try {
     return parseArgs({ args, options }).values;
   } catch (err) {
-    throw new ConfigError(err instanceof Error ? err.message : String(err));
+    // parseArgs hints span several lines; keep the error to one.
+    const message = err instanceof Error ? err.message : String(err);
+    throw new ConfigError(message.replace(/\s*\n\s*/g, " "));
   }
 }
 
-/** A positive integer flag value, or undefined when the flag is absent. */
-export function positiveInt(value: string | undefined, flag: string): number | undefined {
-  if (value === undefined) return undefined;
+/** A positive integer from a flag or environment variable, or undefined when it is unset. */
+export function positiveInt(value: string | undefined, name: string): number | undefined {
+  if (value === undefined || value === "") return undefined;
   const n = Number(value);
   if (!Number.isInteger(n) || n < 1) {
-    throw new ConfigError(`--${flag} must be a positive integer, got "${value}"`);
+    throw new ConfigError(`${name} must be a positive integer, got "${value}"`);
   }
   return n;
 }

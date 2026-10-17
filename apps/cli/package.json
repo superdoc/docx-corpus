@@ -15,7 +15,6 @@
   "dependencies": {
     "@docx-corpus/scraper": "workspace:*",
     "@docx-corpus/extractor": "workspace:*",
-    "@docx-corpus/embedder": "workspace:*",
     "@docx-corpus/shared": "workspace:*"
   },
   "devDependencies": {

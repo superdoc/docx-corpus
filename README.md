@@ -45,8 +45,6 @@ Common Crawl → cdx-filter → scrape → extract → classify → export
 4. **classify**: labels type and topic with fine-tuned XLM-RoBERTa models.
 5. **export**: publishes the metadata to Hugging Face as Parquet.
 
-`embed` (Gemini embeddings) is optional and not needed for the steps above.
-
 ## Quick start
 
 Requires [Bun](https://bun.sh) and Docker.
@@ -54,7 +52,7 @@ Requires [Bun](https://bun.sh) and Docker.
 ```bash
 bun install
 cp .env.example .env
-docker compose up -d       # Local Postgres with pgvector
+docker compose up -d       # Local Postgres
 bun run corpus status      # Pipeline stats
 ```
 
@@ -69,7 +67,6 @@ bun run corpus extract                    # Extract text from pending documents
 bun run corpus classify                   # Classify pending documents
 bun run corpus classify --modal           # Classify on Modal GPUs
 bun run corpus export --push              # Push to Hugging Face
-bun run corpus embed                      # Generate embeddings (optional)
 bun run corpus status                     # Show pipeline stats
 ```
 
@@ -82,9 +79,8 @@ Set these in `.env`. See [`.env.example`](.env.example) for the rest.
 | Variable | Needed for |
 |---|---|
 | `DATABASE_URL` | Every command |
-| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | `scrape`, `crawls`, and `cdx-filter` without `--crawl`. Without them, `extract` and `embed` use `STORAGE_PATH` (default `./corpus`). |
+| `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME` | `scrape`, `crawls`, and `cdx-filter` without `--crawl`. Without them, `extract` uses `STORAGE_PATH` (default `./corpus`). |
 | `AWS_PROFILE` or `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `cdx-filter`. Needs `lambda:InvokeFunction` on the `cdx-filter` function. |
-| `GOOGLE_API_KEY` | `embed` |
 | `ANTHROPIC_API_KEY` | Labeling training data for classification |
 
 ## Development
@@ -109,14 +105,14 @@ TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/docx_corpus_test b
 | `apps/cdx-filter` | Lambda that filters Common Crawl indexes ([deploy](apps/cdx-filter/README.md)) |
 | `apps/api` | Cloudflare Worker for api.docxcorp.us |
 | `apps/site` | Static Astro site for docxcorp.us |
-| `packages/*` | Scraper, extractor, embedder, and shared database and storage code |
+| `packages/*` | Scraper, extractor, and shared database and storage code |
 | `scripts/classification` | Classifier training and inference ([details](scripts/classification/README.md)) |
 | `scripts/export-hf.py` | Hugging Face export |
 | `db/schema.sql` | Postgres schema; `db/migrations/` for existing databases |
 
 ## Docker
 
-The image idles so you can `docker exec` into it for long runs. Its `.env` needs a `DATABASE_URL` the container can reach (`localhost` is the container itself). Without R2 credentials, `extract` and `embed` use `/app/corpus`, so mount a volume there.
+The image idles so you can `docker exec` into it for long runs. Its `.env` needs a `DATABASE_URL` the container can reach (`localhost` is the container itself). Without R2 credentials, `extract` uses `/app/corpus`, so mount a volume there.
 
 ```bash
 docker build -t docx-corpus .

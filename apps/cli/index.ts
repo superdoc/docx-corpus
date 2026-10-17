@@ -4,7 +4,6 @@ import { ConfigError } from "@docx-corpus/shared";
 import { runCdxFilter } from "./commands/cdx-filter";
 import { runClassify } from "./commands/classify";
 import { runCrawls } from "./commands/crawls";
-import { runEmbed } from "./commands/embed";
 import { runExport } from "./commands/export";
 import { runExtract } from "./commands/extract";
 import { runScrape } from "./commands/scrape";
@@ -21,7 +20,6 @@ Commands
   cdx-filter  Filter Common Crawl indexes for .docx URLs (Lambda)
   scrape      Download .docx files from Common Crawl
   extract     Extract text from DOCX files using Docling
-  embed       Generate embeddings for extracted documents
   classify    Classify documents by type and topic (ML)
   crawls      List available CDX-filtered crawls from R2
   export      Export corpus metadata to HuggingFace
@@ -65,9 +63,6 @@ async function main() {
       break;
     case "extract":
       await runExtract(commandArgs);
-      break;
-    case "embed":
-      await runEmbed(commandArgs);
       break;
     case "classify":
       await runClassify(commandArgs);

@@ -17,7 +17,7 @@ Document AI research runs on scanned images and PDFs. DOCX, the format people ac
 
 **What sets it apart**
 - The only large-scale open DOCX corpus.
-- Raw files, extracted text, embeddings, and labels in one place.
+- Raw files, extracted text, and labels in one place.
 - Sourced from the real public web through Common Crawl, not synthetic or single-domain.
 - Maintained by SuperDoc, a team that builds DOCX tooling.
 

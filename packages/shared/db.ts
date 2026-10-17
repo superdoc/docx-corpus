@@ -25,11 +25,6 @@ interface DocumentRecord {
   language_confidence: number | null;
   extraction_error: string | null;
 
-  // Embedding data
-  embedded_at: string | null;
-  embedding_model: string | null;
-  embedding: number[] | null;
-
   // Classification data
   document_type: string | null;
   document_topic: string | null;
@@ -46,13 +41,6 @@ interface ExtractionData {
   language: string;
   language_confidence: number;
   extracted_at?: string;
-}
-
-interface EmbeddingData {
-  id: string;
-  embedding: number[];
-  embedding_model: string;
-  embedded_at?: string;
 }
 
 interface OutcomeKey {
@@ -79,11 +67,6 @@ export interface DbClient {
   updateExtractionError(id: string, error: string): Promise<void>;
   getUnextractedDocuments(limit?: number): Promise<{ id: string }[]>;
 
-  // Embedding
-  updateEmbedding(data: EmbeddingData): Promise<void>;
-  markEmbeddingSkipped(id: string, reason: string): Promise<void>;
-  getUnembeddedDocuments(limit?: number): Promise<{ id: string }[]>;
-
   // Stats
   getLLMClassificationStats(): Promise<{
     classified: number;
@@ -91,15 +74,12 @@ export interface DbClient {
     byType: Record<string, number>;
   }>;
   getExtractionStats(): Promise<{ extracted: number; pending: number; errors: number }>;
-  getEmbeddingStats(): Promise<{ embedded: number; pending: number; skipped: number }>;
 
   close(): Promise<void>;
 }
 
 async function upsert(sql: SQL, doc: Partial<DocumentRecord> & OutcomeKey) {
-  const columns = Object.keys(doc).filter(
-    (k) => doc[k as keyof typeof doc] !== undefined && k !== "embedding",
-  );
+  const columns = Object.keys(doc).filter((k) => doc[k as keyof typeof doc] !== undefined);
   const values = columns.map((k) => doc[k as keyof typeof doc]);
   const placeholders = columns.map((_, i) => `$${i + 1}`).join(", ");
   const updateClauses = columns
@@ -239,42 +219,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    // ==================== Embedding Methods ====================
-
-    async updateEmbedding(data: EmbeddingData) {
-      const embeddedAt = data.embedded_at || new Date().toISOString();
-      // pgvector expects array as string: '[0.1, 0.2, ...]'
-      const embeddingStr = `[${data.embedding.join(",")}]`;
-      await sql.unsafe(
-        `UPDATE documents SET
-          embedded_at = $1,
-          embedding_model = $2,
-          embedding = $3::vector
-        WHERE id = $4`,
-        [embeddedAt, data.embedding_model, embeddingStr, data.id],
-      );
-    },
-
-    async markEmbeddingSkipped(id: string, reason: string) {
-      await sql`
-        UPDATE documents SET
-          embedded_at = ${new Date().toISOString()},
-          embedding_model = ${`skipped:${reason}`}
-        WHERE id = ${id}
-      `;
-    },
-
-    async getUnembeddedDocuments(limit?: number) {
-      return sql<{ id: string }[]>`
-        SELECT id FROM documents
-        WHERE extracted_at IS NOT NULL
-          AND extraction_error IS NULL
-          AND embedded_at IS NULL
-        ORDER BY extracted_at ASC
-        LIMIT ${limit ?? null}
-      `;
-    },
-
     // ==================== Stats ====================
 
     async getLLMClassificationStats() {
@@ -310,17 +254,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
           COUNT(*) FILTER (WHERE extracted_at IS NOT NULL AND extraction_error IS NULL)::int as extracted,
           COUNT(*) FILTER (WHERE status = 'uploaded' AND extracted_at IS NULL)::int as pending,
           COUNT(*) FILTER (WHERE extraction_error IS NOT NULL)::int as errors
-        FROM documents
-      `;
-      return result[0];
-    },
-
-    async getEmbeddingStats() {
-      const result = await sql<{ embedded: number; pending: number; skipped: number }[]>`
-        SELECT
-          COUNT(*) FILTER (WHERE embedded_at IS NOT NULL AND embedding_model NOT LIKE 'skipped:%')::int as embedded,
-          COUNT(*) FILTER (WHERE extracted_at IS NOT NULL AND extraction_error IS NULL AND embedded_at IS NULL)::int as pending,
-          COUNT(*) FILTER (WHERE embedding_model LIKE 'skipped:%')::int as skipped
         FROM documents
       `;
       return result[0];

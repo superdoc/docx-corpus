@@ -37,13 +37,6 @@ export async function runStatus(args: string[]) {
     keyValue("pending", extractionStats.pending);
     keyValue("errors", extractionStats.errors);
 
-    // Embedding stats
-    const embeddingStats = await db.getEmbeddingStats();
-    blank();
-    section("Embedding");
-    keyValue("embedded", embeddingStats.embedded);
-    keyValue("pending", embeddingStats.pending);
-
     // LLM Classification stats
     const llmStats = await db.getLLMClassificationStats();
     blank();

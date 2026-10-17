@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { blank, createDb, header, keyValue, loadDatabaseUrl, section } from "@docx-corpus/shared";
-import { parseFlags } from "../flags";
+import { parseFlags, positiveInt } from "../flags";
 
 const HELP = `
 corpus classify - Classify documents by type and topic
@@ -41,6 +41,8 @@ export async function runClassify(args: string[]) {
     workers: { type: "string", short: "w", default: "20" },
     gpu: { type: "string", default: "a10g" },
   });
+  const batchSize = positiveInt(flags["batch-size"], "batch-size");
+  const workers = positiveInt(flags.workers, "workers");
   const db = await createDb(loadDatabaseUrl());
 
   try {
@@ -67,7 +69,7 @@ export async function runClassify(args: string[]) {
       "--models-dir",
       flags["models-dir"],
       "--batch-size",
-      flags["batch-size"],
+      String(batchSize),
     ];
 
     if (flags.languages) {
@@ -76,16 +78,16 @@ export async function runClassify(args: string[]) {
 
     if (flags.modal) {
       pythonArgs.push("--modal");
-      pythonArgs.push("--workers", flags.workers);
+      pythonArgs.push("--workers", String(workers));
       pythonArgs.push("--gpu", flags.gpu);
     }
 
     section("Running classifier");
     console.log(`Script:    ${scriptPath}`);
     console.log(`Models:    ${flags["models-dir"]}`);
-    console.log(`Batch:     ${flags["batch-size"]}`);
+    console.log(`Batch:     ${batchSize}`);
     console.log(
-      `Modal:     ${flags.modal ? `yes (${flags.workers} workers, ${flags.gpu})` : "no (local)"}`,
+      `Modal:     ${flags.modal ? `yes (${workers} workers, ${flags.gpu})` : "no (local)"}`,
     );
     if (flags.languages) console.log(`Languages: ${flags.languages}`);
     blank();

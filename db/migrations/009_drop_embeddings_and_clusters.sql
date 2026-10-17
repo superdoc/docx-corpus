@@ -2,10 +2,13 @@
 --
 -- Nothing reads these columns. Embeddings (gemini-embedding-001) cover about
 -- 10% of documents and were last written 2026-01-23; clustering ran once.
--- Their indexes are dropped with the columns.
+-- Their indexes are dropped with the columns. If the lock times out, rerun it.
 --
 -- DROP COLUMN does not shrink the table on disk. Run VACUUM FULL documents
 -- afterwards to reclaim the space; it locks the table while it runs.
+
+BEGIN;
+SET LOCAL lock_timeout = '5s';
 
 ALTER TABLE documents
   DROP COLUMN IF EXISTS embedding,
@@ -16,3 +19,4 @@ ALTER TABLE documents
   DROP COLUMN IF EXISTS classified_at;
 
 DROP EXTENSION IF EXISTS vector;
+COMMIT;

@@ -50,7 +50,7 @@ DEFAULT_OUTPUT_DIR = "./models"
 
 
 # ---------------------------------------------------------------------------
-# Shared helpers (used by both local and Modal paths)
+# Training helpers (the Modal path has its own copy in train_remote)
 # ---------------------------------------------------------------------------
 
 
@@ -247,7 +247,7 @@ def run_training_pipeline(
     docs, texts, taxonomy, type2id, id2type, topic2id, id2topic,
     output_dir, model_name, epochs, lr, batch_size, max_length, val_split, seed,
 ):
-    """Shared training pipeline used by both local and Modal paths."""
+    """Train both classifiers locally and write training_config.json."""
     # Prepare datasets
     print("\nPreparing document_type dataset...")
     type_texts, type_labels = prepare_dataset(docs, texts, type2id, "document_type")

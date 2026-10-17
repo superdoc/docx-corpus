@@ -7,8 +7,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test",
-    "build": "bun build index.ts --outdir dist --target bun"
+    "test": "bun test"
   },
   "dependencies": {
     "@aws-sdk/client-lambda": "^3.1006.0",

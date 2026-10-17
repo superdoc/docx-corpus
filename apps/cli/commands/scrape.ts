@@ -1,48 +1,18 @@
 import { getCrawlIds, loadConfig, scrape } from "@docx-corpus/scraper";
+import { parseFlags } from "../flags";
 import { version } from "../package.json";
 
-interface ParsedFlags {
-  crawlIds?: string[];
-  crawlCount?: number;
-  verbose?: boolean;
-  force?: boolean;
-  retryFailed?: boolean;
-}
+export type CrawlSpec = { count: number } | { ids: string[] };
 
-export function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {};
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
-    if (arg === "--crawl" && args[i + 1]) {
-      const value = args[++i];
-      // Bare number = count of latest crawls
-      if (/^\d+$/.test(value)) {
-        flags.crawlCount = parseInt(value, 10);
-        flags.crawlIds = undefined;
-      } else if (value.includes(",")) {
-        // Comma-separated list
-        flags.crawlIds = value
-          .split(",")
-          .map((s) => s.trim())
-          .filter((s) => s.length > 0);
-        flags.crawlCount = undefined;
-      } else {
-        // Single crawl ID
-        flags.crawlIds = [value];
-        flags.crawlCount = undefined;
-      }
-    } else if (arg === "--verbose" || arg === "-v") {
-      flags.verbose = true;
-    } else if (arg === "--force" || arg === "-f") {
-      flags.force = true;
-    } else if (arg === "--retry-failed") {
-      flags.retryFailed = true;
-    }
-  }
-
-  return flags;
+/** `--crawl 3` is the latest 3 crawls; otherwise one ID or a comma-separated list. */
+export function parseCrawlSpec(value: string): CrawlSpec {
+  if (/^\d+$/.test(value)) return { count: parseInt(value, 10) };
+  return {
+    ids: value
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0),
+  };
 }
 
 const HELP = `
@@ -56,9 +26,10 @@ Options
                     <n>         Latest n crawls (e.g., --crawl 3)
                     <id>        Single crawl ID
                     <id>,<id>   Comma-separated list
-  --force           Re-process all URLs from scratch
+  --force, -f       Re-process all URLs from scratch
   --retry-failed    Re-download only previously failed URLs
-  --verbose         Show detailed logs for debugging
+  --verbose, -v     Show detailed logs for debugging
+  --help, -h        Show this help
 
 Environment Variables
   CRAWL_ID             Common Crawl index ID (e.g., CC-MAIN-2025-51)
@@ -71,44 +42,43 @@ Examples
 `;
 
 export async function runScrape(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const flags = parseFlags(args);
+  const flags = parseFlags(args, HELP, {
+    crawl: { type: "string" },
+    verbose: { type: "boolean", short: "v" },
+    force: { type: "boolean", short: "f" },
+    "retry-failed": { type: "boolean" },
+  });
   const config = loadConfig();
+  const spec = flags.crawl === undefined ? undefined : parseCrawlSpec(flags.crawl);
 
   // Resolve crawl IDs from flags
   let crawlIds: string[] | undefined;
-  if (flags.crawlCount !== undefined) {
-    if (flags.crawlCount < 1) {
+  if (spec && "count" in spec) {
+    if (spec.count < 1) {
       console.error("Error: --crawl count must be at least 1");
       process.exit(1);
     }
-    crawlIds = await getCrawlIds(flags.crawlCount);
+    crawlIds = await getCrawlIds(spec.count);
     if (crawlIds.length === 0) {
       console.error("Error: No crawls available");
       process.exit(1);
     }
-    if (crawlIds.length < flags.crawlCount) {
-      console.warn(
-        `Warning: Only ${crawlIds.length} crawls available (requested ${flags.crawlCount})`,
-      );
+    if (crawlIds.length < spec.count) {
+      console.warn(`Warning: Only ${crawlIds.length} crawls available (requested ${spec.count})`);
     }
-  } else if (flags.crawlIds) {
-    if (flags.crawlIds.length === 0) {
+  } else if (spec) {
+    if (spec.ids.length === 0) {
       console.error("Error: --crawl requires at least one valid crawl ID");
       process.exit(1);
     }
-    crawlIds = flags.crawlIds;
+    crawlIds = spec.ids;
   }
 
   await scrape({
     config,
     verbose: flags.verbose,
     force: flags.force,
-    retryFailed: flags.retryFailed,
+    retryFailed: flags["retry-failed"],
     crawlIds,
     version,
   });

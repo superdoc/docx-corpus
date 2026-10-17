@@ -1,35 +1,6 @@
 import { type EmbedConfig, processEmbeddings } from "@docx-corpus/embedder";
 import { createDb, loadDatabaseUrl, loadStorage } from "@docx-corpus/shared";
-
-interface ParsedFlags {
-  batchSize?: number;
-  verbose: boolean;
-}
-
-function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {
-    verbose: false,
-  };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    const next = args[i + 1];
-
-    switch (arg) {
-      case "--batch":
-      case "-b":
-        flags.batchSize = parseInt(next || "", 10);
-        i++;
-        break;
-      case "--verbose":
-      case "-v":
-        flags.verbose = true;
-        break;
-    }
-  }
-
-  return flags;
-}
+import { parseFlags, positiveInt } from "../flags";
 
 const HELP = `
 corpus embed - Generate embeddings for extracted documents
@@ -69,12 +40,10 @@ Examples
 `;
 
 export async function runEmbed(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const flags = parseFlags(args);
+  const flags = parseFlags(args, HELP, {
+    batch: { type: "string", short: "b" },
+    verbose: { type: "boolean", short: "v", default: false },
+  });
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     console.error("Error: GOOGLE_API_KEY environment variable is required");
@@ -89,7 +58,7 @@ export async function runEmbed(args: string[]) {
     storage,
     apiKey,
     inputPrefix: process.env.EMBED_INPUT_PREFIX || "extracted",
-    limit: flags.batchSize,
+    limit: positiveInt(flags.batch, "batch"),
     concurrency: parseInt(process.env.EMBED_CONCURRENCY || "", 10) || 20,
   };
 

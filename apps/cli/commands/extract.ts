@@ -1,41 +1,6 @@
 import { type ExtractConfig, processDirectory } from "@docx-corpus/extractor";
 import { createDb, loadDatabaseUrl, loadStorage } from "@docx-corpus/shared";
-
-interface ParsedFlags {
-  batchSize?: number;
-  workers?: number;
-  verbose: boolean;
-}
-
-function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {
-    verbose: false,
-  };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    const next = args[i + 1];
-
-    switch (arg) {
-      case "--batch":
-      case "-b":
-        flags.batchSize = parseInt(next || "", 10);
-        i++;
-        break;
-      case "--workers":
-      case "-w":
-        flags.workers = parseInt(next || "", 10);
-        i++;
-        break;
-      case "--verbose":
-      case "-v":
-        flags.verbose = true;
-        break;
-    }
-  }
-
-  return flags;
-}
+import { parseFlags, positiveInt } from "../flags";
 
 const HELP = `
 corpus extract - Extract text from DOCX files using Docling
@@ -74,12 +39,11 @@ Examples
 `;
 
 export async function runExtract(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const flags = parseFlags(args);
+  const flags = parseFlags(args, HELP, {
+    batch: { type: "string", short: "b" },
+    workers: { type: "string", short: "w" },
+    verbose: { type: "boolean", short: "v", default: false },
+  });
   const { storage, location } = loadStorage();
   const db = await createDb(loadDatabaseUrl());
 
@@ -88,8 +52,10 @@ export async function runExtract(args: string[]) {
     storage,
     inputPrefix: process.env.EXTRACT_INPUT_PREFIX || "documents",
     outputPrefix: process.env.EXTRACT_OUTPUT_PREFIX || "extracted",
-    limit: flags.batchSize,
-    workers: flags.workers ?? (parseInt(process.env.EXTRACT_WORKERS || "", 10) || 4),
+    limit: positiveInt(flags.batch, "batch"),
+    workers:
+      positiveInt(flags.workers, "workers") ??
+      (parseInt(process.env.EXTRACT_WORKERS || "", 10) || 4),
   };
 
   console.log("Text Extractor");

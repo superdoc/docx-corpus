@@ -1,5 +1,6 @@
 import { listFilteredCrawls } from "@docx-corpus/scraper";
 import { blank, header, keyValue, loadR2Config, section } from "@docx-corpus/shared";
+import { parseFlags } from "../flags";
 
 const HELP = `
 corpus crawls - List available CDX-filtered crawls from R2
@@ -24,11 +25,7 @@ Examples
 `;
 
 export async function runCrawls(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
+  parseFlags(args, HELP, {});
   const r2 = loadR2Config();
   if (!r2) {
     console.error("Error: Cloudflare R2 credentials are required");

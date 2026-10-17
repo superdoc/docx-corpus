@@ -1,7 +1,19 @@
 import { blank, createDb, header, keyValue, loadDatabaseUrl, section } from "@docx-corpus/shared";
+import { parseFlags } from "../flags";
 import { version } from "../package.json";
 
-export async function runStatus(_args: string[]) {
+const HELP = `
+corpus status - Show pipeline stats
+
+Usage
+  corpus status
+
+Environment Variables
+  DATABASE_URL   PostgreSQL connection string (required)
+`;
+
+export async function runStatus(args: string[]) {
+  parseFlags(args, HELP, {});
   header("docx-corpus", version);
 
   const db = await createDb(loadDatabaseUrl());

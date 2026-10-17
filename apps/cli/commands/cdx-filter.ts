@@ -1,11 +1,6 @@
-import {
-  getAllCrawlIds,
-  hasCloudflareCredentials,
-  invokeCdxFilter,
-  listFilteredCrawls,
-  loadConfig,
-} from "@docx-corpus/scraper";
-import { blank, header, keyValue, section } from "@docx-corpus/shared";
+import { getAllCrawlIds, invokeCdxFilter, listFilteredCrawls } from "@docx-corpus/scraper";
+import { blank, header, keyValue, loadR2Config, section } from "@docx-corpus/shared";
+import { parseFlags, positiveInt } from "../flags";
 
 const HELP = `
 corpus cdx-filter - Filter Common Crawl indexes for .docx URLs via Lambda
@@ -19,13 +14,13 @@ Pass --crawl or --all to invoke the Lambda and process new crawls.
 Options
   --crawl <id>      Filter a specific crawl (e.g. CC-MAIN-2026-08)
   --all             Filter all missing crawls
-  --latest <n>      Filter the latest N missing crawls (default: 1)
+  --latest <n>      Filter the latest N missing crawls
   --region <r>      AWS region for Lambda (default: us-east-1)
   --concurrency <n> Parallel Lambda invocations per crawl (default: 10)
   --help, -h        Show this help
 
 Environment Variables
-  AWS_REGION / AWS_PROFILE    AWS credentials for Lambda invocation
+  AWS_PROFILE                 AWS credentials for Lambda invocation
   CLOUDFLARE_ACCOUNT_ID       Cloudflare account ID (for R2 lookup)
   R2_ACCESS_KEY_ID            R2 access key
   R2_SECRET_ACCESS_KEY        R2 secret key
@@ -37,23 +32,17 @@ Examples
   corpus cdx-filter --all                    # Filter everything missing
 `;
 
-function parseFlag(args: string[], flag: string): string | undefined {
-  const idx = args.indexOf(flag);
-  return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
-}
-
 export async function runCdxFilter(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const config = loadConfig();
-  const crawlId = parseFlag(args, "--crawl");
-  const filterAll = args.includes("--all");
-  const latest = parseFlag(args, "--latest");
-  const region = parseFlag(args, "--region") || "us-east-1";
-  const concurrency = parseInt(parseFlag(args, "--concurrency") || "10", 10);
+  const flags = parseFlags(args, HELP, {
+    crawl: { type: "string" },
+    all: { type: "boolean", default: false },
+    latest: { type: "string" },
+    region: { type: "string", default: "us-east-1" },
+    concurrency: { type: "string", default: "10" },
+  });
+  const { crawl: crawlId, all: filterAll, region } = flags;
+  const latest = positiveInt(flags.latest, "--latest");
+  const concurrency = positiveInt(flags.concurrency, "--concurrency");
 
   header("docx-corpus", "cdx-filter");
 
@@ -71,8 +60,8 @@ export async function runCdxFilter(args: string[]) {
     }
 
     section(`Filtering ${crawlId}`);
-    const result = await invokeCdxFilter(crawlId, { region, concurrency });
-    console.log(`Queued ${result.invoked} Lambda invocations for ${crawlId}`);
+    const invoked = await invokeCdxFilter(crawlId, { region, concurrency });
+    console.log(`Queued ${invoked} Lambda invocations for ${crawlId}`);
     blank();
     console.log(
       "Monitor progress: aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1",
@@ -81,13 +70,14 @@ export async function runCdxFilter(args: string[]) {
   }
 
   // Compare against what's already filtered in R2
-  if (!hasCloudflareCredentials(config)) {
+  const r2 = loadR2Config();
+  if (!r2) {
     console.error("Cloudflare R2 credentials required to check filtered crawls");
     console.error("Set CLOUDFLARE_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY");
     process.exit(1);
   }
 
-  const filtered = await listFilteredCrawls(config);
+  const filtered = await listFilteredCrawls(r2);
   const filteredIds = new Set(filtered.map((c) => c.id));
   const missing = allCrawlIds.filter((id) => !filteredIds.has(id));
 
@@ -118,13 +108,13 @@ export async function runCdxFilter(args: string[]) {
     return;
   }
 
-  const toProcess = filterAll ? missing : missing.slice(0, parseInt(latest || "1", 10));
+  const toProcess = filterAll ? missing : missing.slice(0, latest);
 
   section(`Filtering ${toProcess.length} crawl${toProcess.length > 1 ? "s" : ""}`);
   for (const id of toProcess) {
     console.log(`\nProcessing ${id}...`);
-    const result = await invokeCdxFilter(id, { region, concurrency });
-    console.log(`  Queued ${result.invoked} Lambda invocations`);
+    const invoked = await invokeCdxFilter(id, { region, concurrency });
+    console.log(`  Queued ${invoked} Lambda invocations`);
   }
 
   blank();

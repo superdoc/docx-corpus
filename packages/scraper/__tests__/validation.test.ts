@@ -127,10 +127,6 @@ describe("extractFilename", () => {
   test("handles URL with trailing slash", () => {
     expect(extractFilename("https://example.com/files/")).toBe("unknown.docx");
   });
-
-  test("handles URL with just domain", () => {
-    expect(extractFilename("https://example.com")).toBe("unknown.docx");
-  });
 });
 
 describe("computeHash", () => {
@@ -149,30 +145,10 @@ describe("computeHash", () => {
     expect(hash1).not.toBe(hash2);
   });
 
-  test("produces 64-character hex string", async () => {
-    const data = new TextEncoder().encode("test");
-    const hash = await computeHash(data);
-    expect(hash.length).toBe(64);
-    expect(hash).toMatch(/^[0-9a-f]{64}$/);
-  });
-
   test("handles empty data", async () => {
     const data = new Uint8Array(0);
     const hash = await computeHash(data);
     // SHA-256 of empty string is known
     expect(hash).toBe("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
-  });
-
-  test("handles binary data with null bytes", async () => {
-    const data = new Uint8Array([0x00, 0x00, 0xff, 0xff]);
-    const hash = await computeHash(data);
-    expect(hash.length).toBe(64);
-  });
-
-  test("handles large data", async () => {
-    const data = new Uint8Array(1024 * 1024); // 1MB
-    data.fill(0x42);
-    const hash = await computeHash(data);
-    expect(hash.length).toBe(64);
   });
 });

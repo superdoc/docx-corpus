@@ -16,10 +16,6 @@ dist/
 # Local corpus cache
 corpus/
 dev/
-mockups/
-
-# Generated site data (local only)
-apps/site/data/
 
 # Astro
 apps/site/.astro/

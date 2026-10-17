@@ -3,8 +3,7 @@ import WidePageLayout from '../../layouts/WidePageLayout.astro';
 import StatsRow from '../../components/StatsRow.astro';
 import SamplesTable from '../../components/SamplesTable.astro';
 import SeeAlso from '../../components/SeeAlso.astro';
-import { routes } from '../../lib/routes';
-import { canonicalUrl } from '../../lib/seo';
+import { absoluteUrl, routes } from '../../lib/routes';
 import {
   getTypeFacets, getTopicsForType, getLanguagesForType, getSamplesByType,
   TOPIC_LABELS, TYPE_COPY,
@@ -43,11 +42,11 @@ const structuredData = {
   '@type': 'Dataset',
   name: `docx-corpus - ${label} Documents`,
   description,
-  url: canonicalUrl(routes.type(type!)),
+  url: absoluteUrl(routes.type(type!)),
   isPartOf: {
     '@type': 'Dataset',
     name: 'docx-corpus',
-    url: canonicalUrl(routes.home()),
+    url: absoluteUrl(routes.home()),
     license: 'https://opendatacommons.org/licenses/by/1-0/',
     creator: { '@type': 'Organization', name: 'SuperDoc', url: 'https://superdoc.dev' },
   },

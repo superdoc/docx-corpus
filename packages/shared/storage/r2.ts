@@ -6,12 +6,8 @@ import {
 } from "@aws-sdk/client-s3";
 import type { R2Config, Storage } from "./types";
 
-/**
- * Create a Cloudflare R2 storage adapter.
- * Keys are S3 object keys (e.g., "documents/abc123.docx").
- */
-export function createR2Storage(config: R2Config): Storage {
-  const client = new S3Client({
+export function createR2Client(config: R2Config): S3Client {
+  return new S3Client({
     region: "auto",
     endpoint: `https://${config.accountId}.r2.cloudflarestorage.com`,
     credentials: {
@@ -19,8 +15,28 @@ export function createR2Storage(config: R2Config): Storage {
       secretAccessKey: config.secretAccessKey,
     },
   });
+}
+
+/**
+ * Create a Cloudflare R2 storage adapter.
+ * Keys are S3 object keys (e.g., "documents/abc123.docx").
+ */
+export function createR2Storage(config: R2Config): Storage {
+  const client = createR2Client(config);
 
   const bucket = config.bucket;
+
+  async function exists(key: string): Promise<boolean> {
+    try {
+      await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+      return true;
+    } catch (err: any) {
+      if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      throw err;
+    }
+  }
 
   const storage: Storage = {
     async read(key: string): Promise<Uint8Array | null> {
@@ -31,18 +47,6 @@ export function createR2Storage(config: R2Config): Storage {
       } catch (err: any) {
         if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
           return null;
-        }
-        throw err;
-      }
-    },
-
-    async exists(key: string): Promise<boolean> {
-      try {
-        await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-        return true;
-      } catch (err: any) {
-        if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
-          return false;
         }
         throw err;
       }
@@ -64,7 +68,7 @@ export function createR2Storage(config: R2Config): Storage {
     },
 
     async writeIfNotExists(key: string, content: Uint8Array): Promise<boolean> {
-      if (await storage.exists(key)) return false;
+      if (await exists(key)) return false;
       await storage.write(key, content);
       return true;
     },

@@ -186,11 +186,10 @@ def process_file(path: Path, *, in_place: bool, want_sha: bool) -> Outcome:
     return Outcome(path, status, new_sha256=new_sha)
 
 
-def iter_inputs(paths: list[Path], *, single_file_strict: bool) -> Iterator[Path]:
+def iter_inputs(paths: list[Path]) -> Iterator[Path]:
     """Yield candidate file paths. Recursive into directories. Skip symlinks.
 
-    If single_file_strict and a single non-existent or non-file path is given
-    explicitly, raise; otherwise yield it and let process_file mark it.
+    A path that doesn't exist or isn't a file is yielded as is, and process_file marks it.
     """
     for p in paths:
         if p.is_symlink() and p.is_dir():
@@ -251,7 +250,7 @@ def main(argv: list[str] | None = None) -> int:
         summary = ", ".join(f"{k}={v}" for k, v in sorted(counts.items()))
         print(f"[{total_seen} processed] {summary}", file=sys.stderr)
 
-    for fp in iter_inputs(args.paths, single_file_strict=False):
+    for fp in iter_inputs(args.paths):
         outcome = process_file(fp, in_place=args.in_place, want_sha=args.sha256)
         counts[outcome.status] = counts.get(outcome.status, 0) + 1
         total_seen += 1

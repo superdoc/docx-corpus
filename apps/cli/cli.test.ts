@@ -1,134 +1,59 @@
 import { describe, expect, test } from "bun:test";
-import { parseFlags } from "./commands/scrape";
+import { parseCrawlSpec } from "./commands/scrape";
+import { parseFlags, positiveInt } from "./flags";
+
+describe("parseCrawlSpec", () => {
+  test("a bare number is a count of the latest crawls", () => {
+    expect(parseCrawlSpec("3")).toEqual({ count: 3 });
+    expect(parseCrawlSpec("0")).toEqual({ count: 0 });
+  });
+
+  test("anything else is a single ID or a comma-separated list", () => {
+    expect(parseCrawlSpec("CC-MAIN-2025-51")).toEqual({ ids: ["CC-MAIN-2025-51"] });
+    expect(parseCrawlSpec("CC-MAIN-2025-51 , CC-MAIN-2025-48,")).toEqual({
+      ids: ["CC-MAIN-2025-51", "CC-MAIN-2025-48"],
+    });
+  });
+
+  test("a list of only commas has no IDs", () => {
+    expect(parseCrawlSpec(",,,")).toEqual({ ids: [] });
+  });
+});
 
 describe("parseFlags", () => {
-  describe("--crawl with number (latest N crawls)", () => {
-    test("parses bare number as crawlCount", () => {
-      const flags = parseFlags(["--crawl", "3"]);
-      expect(flags.crawlCount).toBe(3);
-      expect(flags.crawlIds).toBeUndefined();
-    });
+  const options = {
+    crawl: { type: "string" },
+    force: { type: "boolean", short: "f" },
+  } as const;
 
-    test("parses zero as crawlCount", () => {
-      const flags = parseFlags(["--crawl", "0"]);
-      expect(flags.crawlCount).toBe(0);
-    });
-
-    test("parses large number", () => {
-      const flags = parseFlags(["--crawl", "100"]);
-      expect(flags.crawlCount).toBe(100);
+  test("reads long and short flags, and the last repeated value wins", () => {
+    expect(parseFlags(["--crawl", "3", "-f", "--crawl", "X"], "", options)).toEqual({
+      crawl: "X",
+      force: true,
     });
   });
 
-  describe("--crawl with single ID", () => {
-    test("parses single crawl ID", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51"]);
-      expect(flags.crawlCount).toBeUndefined();
-    });
+  test("rejects unknown flags and missing values", () => {
+    expect(() => parseFlags(["--crawll", "3"], "", options)).toThrow("Unknown option '--crawll'");
+    expect(() => parseFlags(["--crawl"], "", options)).toThrow("argument missing");
   });
 
-  describe("--crawl with comma-separated list", () => {
-    test("parses comma-separated list", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51,CC-MAIN-2025-48"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51", "CC-MAIN-2025-48"]);
-    });
+  test("reports multi-line parseArgs errors on one line", () => {
+    expect(() => parseFlags(["--crawl", "--force"], "", options)).toThrow(
+      expect.objectContaining({ message: expect.not.stringContaining("\n") }),
+    );
+  });
+});
 
-    test("trims whitespace around IDs", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51 , CC-MAIN-2025-48"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51", "CC-MAIN-2025-48"]);
-    });
-
-    test("filters empty segments from trailing comma", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51,"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51"]);
-    });
-
-    test("filters empty segments from leading comma", () => {
-      const flags = parseFlags(["--crawl", ",CC-MAIN-2025-51"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51"]);
-    });
-
-    test("returns empty array for only commas", () => {
-      const flags = parseFlags(["--crawl", ",,,"]);
-      expect(flags.crawlIds).toEqual([]);
-    });
+describe("positiveInt", () => {
+  test("parses positive integers and passes through an absent value", () => {
+    expect(positiveInt("50", "--batch")).toBe(50);
+    expect(positiveInt(undefined, "--batch")).toBeUndefined();
   });
 
-  describe("--force", () => {
-    test("parses --force flag", () => {
-      const flags = parseFlags(["--force"]);
-      expect(flags.force).toBe(true);
-    });
-
-    test("parses -f shorthand", () => {
-      const flags = parseFlags(["-f"]);
-      expect(flags.force).toBe(true);
-    });
-  });
-
-  describe("--verbose", () => {
-    test("parses --verbose flag", () => {
-      const flags = parseFlags(["--verbose"]);
-      expect(flags.verbose).toBe(true);
-    });
-
-    test("parses -v shorthand", () => {
-      const flags = parseFlags(["-v"]);
-      expect(flags.verbose).toBe(true);
-    });
-  });
-
-  describe("combined flags", () => {
-    test("parses all flags together", () => {
-      const flags = parseFlags(["--crawl", "3", "--force", "--verbose"]);
-      expect(flags.crawlCount).toBe(3);
-      expect(flags.force).toBe(true);
-      expect(flags.verbose).toBe(true);
-    });
-
-    test("parses crawl ID with other flags", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51,CC-MAIN-2025-48", "-f"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51", "CC-MAIN-2025-48"]);
-      expect(flags.force).toBe(true);
-    });
-  });
-
-  describe("repeated --crawl flags (last wins)", () => {
-    test("ID after count uses ID", () => {
-      const flags = parseFlags(["--crawl", "3", "--crawl", "CC-MAIN-2025-51"]);
-      expect(flags.crawlIds).toEqual(["CC-MAIN-2025-51"]);
-      expect(flags.crawlCount).toBeUndefined();
-    });
-
-    test("count after ID uses count", () => {
-      const flags = parseFlags(["--crawl", "CC-MAIN-2025-51", "--crawl", "5"]);
-      expect(flags.crawlCount).toBe(5);
-      expect(flags.crawlIds).toBeUndefined();
-    });
-
-    test("list after count uses list", () => {
-      const flags = parseFlags(["--crawl", "3", "--crawl", "X,Y"]);
-      expect(flags.crawlIds).toEqual(["X", "Y"]);
-      expect(flags.crawlCount).toBeUndefined();
-    });
-  });
-
-  describe("edge cases", () => {
-    test("returns empty object for no args", () => {
-      const flags = parseFlags([]);
-      expect(flags).toEqual({});
-    });
-
-    test("ignores unknown flags", () => {
-      const flags = parseFlags(["--unknown", "value"]);
-      expect(flags).toEqual({});
-    });
-
-    test("ignores --crawl without value", () => {
-      const flags = parseFlags(["--crawl"]);
-      expect(flags.crawlIds).toBeUndefined();
-      expect(flags.crawlCount).toBeUndefined();
-    });
+  test("rejects empty, zero, negatives, and non-numbers", () => {
+    for (const value of ["", "0", "-1", "abc", "1.5"]) {
+      expect(() => positiveInt(value, "--batch")).toThrow("--batch must be a positive integer");
+    }
   });
 });

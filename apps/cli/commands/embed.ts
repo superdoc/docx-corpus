@@ -1,41 +1,6 @@
-import {
-  type EmbedConfig,
-  hasCloudflareCredentials,
-  hasGoogleCredentials,
-  loadEmbedderConfig,
-  processEmbeddings,
-} from "@docx-corpus/embedder";
-import { createDb, createLocalStorage, createR2Storage } from "@docx-corpus/shared";
-
-interface ParsedFlags {
-  batchSize?: number;
-  verbose: boolean;
-}
-
-function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {
-    verbose: false,
-  };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    const next = args[i + 1];
-
-    switch (arg) {
-      case "--batch":
-      case "-b":
-        flags.batchSize = parseInt(next || "", 10);
-        i++;
-        break;
-      case "--verbose":
-      case "-v":
-        flags.verbose = true;
-        break;
-    }
-  }
-
-  return flags;
-}
+import { type EmbedConfig, processEmbeddings } from "@docx-corpus/embedder";
+import { createDb, loadDatabaseUrl, loadStorage } from "@docx-corpus/shared";
+import { parseFlags, positiveInt } from "../flags";
 
 const HELP = `
 corpus embed - Generate embeddings for extracted documents
@@ -75,58 +40,35 @@ Examples
 `;
 
 export async function runEmbed(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const flags = parseFlags(args);
-  const envConfig = loadEmbedderConfig();
-
-  // Validate database URL
-  if (!envConfig.database.url) {
-    console.error("Error: DATABASE_URL environment variable is required");
-    process.exit(1);
-  }
-
-  // Validate Google API key
-  if (!hasGoogleCredentials(envConfig)) {
+  const flags = parseFlags(args, HELP, {
+    batch: { type: "string", short: "b" },
+    verbose: { type: "boolean", short: "v", default: false },
+  });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) {
     console.error("Error: GOOGLE_API_KEY environment variable is required");
     process.exit(1);
   }
 
-  const useCloud = hasCloudflareCredentials(envConfig);
-
-  // Create database client
-  const db = await createDb(envConfig.database.url);
-
-  // Create storage based on credentials
-  const storage = useCloud
-    ? createR2Storage({
-        accountId: envConfig.cloudflare.accountId,
-        accessKeyId: envConfig.cloudflare.r2AccessKeyId,
-        secretAccessKey: envConfig.cloudflare.r2SecretAccessKey,
-        bucket: envConfig.cloudflare.r2BucketName,
-      })
-    : createLocalStorage(envConfig.storage.localPath);
+  const { storage, location } = loadStorage();
+  const db = await createDb(loadDatabaseUrl());
 
   const config: EmbedConfig = {
     db,
     storage,
-    inputPrefix: envConfig.embed.inputPrefix,
-    batchSize: flags.batchSize ?? 1000000,
-    concurrency: envConfig.embed.concurrency,
+    apiKey,
+    inputPrefix: process.env.EMBED_INPUT_PREFIX || "extracted",
+    limit: positiveInt(flags.batch, "--batch"),
+    concurrency: positiveInt(process.env.EMBED_CONCURRENCY || undefined, "EMBED_CONCURRENCY") ?? 20,
   };
 
   console.log("Document Embedder");
   console.log("=================");
-  console.log(
-    `Storage: ${useCloud ? `R2 (${envConfig.cloudflare.r2BucketName})` : `local (${envConfig.storage.localPath})`}`,
-  );
+  console.log(`Storage: ${location}`);
   console.log(`Input:   ${config.inputPrefix}/`);
   console.log(`Output:  database (embedding column)`);
   console.log(`Model:   gemini-embedding-001 (3072 dims)`);
-  console.log(`Batch:   ${config.batchSize >= 1000000 ? "all" : config.batchSize}`);
+  console.log(`Batch:   ${config.limit ?? "all"}`);
   console.log(`Concurrency: ${config.concurrency} parallel requests`);
   console.log("");
 

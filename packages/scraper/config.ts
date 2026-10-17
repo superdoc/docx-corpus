@@ -1,3 +1,5 @@
+import { loadDatabaseUrl, loadR2Config, type R2Config } from "@docx-corpus/shared";
+
 export interface Config {
   crawl: {
     id: string;
@@ -13,12 +15,7 @@ export interface Config {
   database: {
     url: string;
   };
-  cloudflare: {
-    accountId: string;
-    r2AccessKeyId: string;
-    r2SecretAccessKey: string;
-    r2BucketName: string;
-  };
+  r2: R2Config | null;
 }
 
 export function loadConfig(): Config {
@@ -37,24 +34,8 @@ export function loadConfig(): Config {
       localPath: env.STORAGE_PATH || "./corpus",
     },
     database: {
-      url: env.DATABASE_URL || "postgres://postgres:postgres@localhost:5432/corpus",
+      url: loadDatabaseUrl(),
     },
-    cloudflare: {
-      accountId: env.CLOUDFLARE_ACCOUNT_ID || "",
-      r2AccessKeyId: env.R2_ACCESS_KEY_ID || "",
-      r2SecretAccessKey: env.R2_SECRET_ACCESS_KEY || "",
-      r2BucketName: env.R2_BUCKET_NAME || "docx-corpus",
-    },
+    r2: loadR2Config(),
   };
-}
-
-/**
- * Check if Cloudflare credentials are configured
- */
-export function hasCloudflareCredentials(config: Config): boolean {
-  return !!(
-    config.cloudflare.accountId &&
-    config.cloudflare.r2AccessKeyId &&
-    config.cloudflare.r2SecretAccessKey
-  );
 }

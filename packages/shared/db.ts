@@ -1,8 +1,8 @@
 import { SQL } from "bun";
 
-export type DocumentStatus = "uploaded" | "failed" | "duplicate";
+type DocumentStatus = "uploaded" | "failed" | "duplicate";
 
-export interface DocumentRecord {
+interface DocumentRecord {
   id: string; // SHA-256 hash
   source_url: string;
   crawl_id: string;
@@ -30,19 +30,14 @@ export interface DocumentRecord {
   embedding_model: string | null;
   embedding: number[] | null;
 
-  // Classification data (clustering)
-  cluster_id: number | null;
-  cluster_label: string | null;
-  classified_at: string | null;
-
-  // LLM classification data
+  // Classification data
   document_type: string | null;
   document_topic: string | null;
   classification_confidence: number | null;
   classification_model: string | null;
 }
 
-export interface ExtractionData {
+interface ExtractionData {
   id: string;
   word_count: number;
   char_count: number;
@@ -51,17 +46,16 @@ export interface ExtractionData {
   language: string;
   language_confidence: number;
   extracted_at?: string;
-  extraction_error?: string;
 }
 
-export interface EmbeddingData {
+interface EmbeddingData {
   id: string;
   embedding: number[];
   embedding_model: string;
   embedded_at?: string;
 }
 
-export interface OutcomeKey {
+interface OutcomeKey {
   id: string;
   source_url: string;
   crawl_id: string;
@@ -72,7 +66,7 @@ export interface DbClient {
   // Scraping
   // Writes one CDX URL's outcome in its crawl, replacing that URL's earlier failed rows.
   recordOutcome(doc: Partial<DocumentRecord> & OutcomeKey): Promise<void>;
-  getDocument(id: string): Promise<DocumentRecord | null>;
+  getDocument(id: string): Promise<Pick<DocumentRecord, "source_url"> | null>;
   getProcessedUrlHashes(opts?: { excludeFailed?: boolean }): Promise<Set<string>>;
   upsertDuplicateBatch(
     records: { id: string; sourceUrl: string; crawlId: string; filename: string }[],
@@ -83,12 +77,12 @@ export interface DbClient {
   // Extraction
   updateExtraction(data: ExtractionData): Promise<void>;
   updateExtractionError(id: string, error: string): Promise<void>;
-  getUnextractedDocuments(limit: number): Promise<DocumentRecord[]>;
+  getUnextractedDocuments(limit?: number): Promise<{ id: string }[]>;
 
   // Embedding
   updateEmbedding(data: EmbeddingData): Promise<void>;
   markEmbeddingSkipped(id: string, reason: string): Promise<void>;
-  getUnembeddedDocuments(limit: number): Promise<DocumentRecord[]>;
+  getUnembeddedDocuments(limit?: number): Promise<{ id: string }[]>;
 
   // Stats
   getLLMClassificationStats(): Promise<{
@@ -98,7 +92,6 @@ export interface DbClient {
   }>;
   getExtractionStats(): Promise<{ extracted: number; pending: number; errors: number }>;
   getEmbeddingStats(): Promise<{ embedded: number; pending: number; skipped: number }>;
-  getClassificationStats(): Promise<{ classified: number; pending: number; clusters: number }>;
 
   close(): Promise<void>;
 }
@@ -154,8 +147,8 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
     },
 
     async getDocument(id: string) {
-      const rows = await sql<DocumentRecord[]>`
-        SELECT * FROM documents WHERE id = ${id}
+      const rows = await sql<{ source_url: string }[]>`
+        SELECT source_url FROM documents WHERE id = ${id}
       `;
       return rows[0] || null;
     },
@@ -234,15 +227,15 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    async getUnextractedDocuments(limit: number) {
+    async getUnextractedDocuments(limit?: number) {
       // Get docs that haven't been extracted yet (excludes previously failed ones)
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents
+      return sql<{ id: string }[]>`
+        SELECT id FROM documents
         WHERE status = 'uploaded'
           AND extracted_at IS NULL
           AND extraction_error IS NULL
         ORDER BY uploaded_at ASC
-        LIMIT ${limit}
+        LIMIT ${limit ?? null}
       `;
     },
 
@@ -271,14 +264,14 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
       `;
     },
 
-    async getUnembeddedDocuments(limit: number) {
-      return sql<DocumentRecord[]>`
-        SELECT * FROM documents
+    async getUnembeddedDocuments(limit?: number) {
+      return sql<{ id: string }[]>`
+        SELECT id FROM documents
         WHERE extracted_at IS NOT NULL
           AND extraction_error IS NULL
           AND embedded_at IS NULL
         ORDER BY extracted_at ASC
-        LIMIT ${limit}
+        LIMIT ${limit ?? null}
       `;
     },
 
@@ -328,17 +321,6 @@ export async function createDb(databaseUrl: string): Promise<DbClient> {
           COUNT(*) FILTER (WHERE embedded_at IS NOT NULL AND embedding_model NOT LIKE 'skipped:%')::int as embedded,
           COUNT(*) FILTER (WHERE extracted_at IS NOT NULL AND extraction_error IS NULL AND embedded_at IS NULL)::int as pending,
           COUNT(*) FILTER (WHERE embedding_model LIKE 'skipped:%')::int as skipped
-        FROM documents
-      `;
-      return result[0];
-    },
-
-    async getClassificationStats() {
-      const result = await sql<{ classified: number; pending: number; clusters: number }[]>`
-        SELECT
-          COUNT(*) FILTER (WHERE classified_at IS NOT NULL)::int as classified,
-          COUNT(*) FILTER (WHERE embedded_at IS NOT NULL AND classified_at IS NULL)::int as pending,
-          COUNT(DISTINCT cluster_id) FILTER (WHERE cluster_id IS NOT NULL)::int as clusters
         FROM documents
       `;
       return result[0];

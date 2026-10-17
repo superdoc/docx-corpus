@@ -259,7 +259,7 @@ async def label_documents(
     return all_results
 
 
-def print_summary(output_path: str, taxonomy: dict):
+def print_summary(output_path: str):
     """Print classification distribution summary."""
     results = load_existing_results(output_path)
     if not results:
@@ -365,7 +365,7 @@ def main():
     )
 
     # Print summary
-    print_summary(args.output, taxonomy)
+    print_summary(args.output)
 
     print(f"\nNext step: python train.py --input {args.output}")
 

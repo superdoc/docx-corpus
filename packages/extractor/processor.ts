@@ -1,8 +1,22 @@
 import { mkdir, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { type DocumentRecord, formatProgress, writeMultiLineProgress } from "@docx-corpus/shared";
-import type { ExtractConfig } from "./types";
+import {
+  type DbClient,
+  formatProgress,
+  type Storage,
+  writeMultiLineProgress,
+} from "@docx-corpus/shared";
+
+export interface ExtractConfig {
+  db: DbClient;
+  storage: Storage;
+  inputPrefix: string;
+  outputPrefix: string;
+  /** Documents to process; all pending when unset. */
+  limit?: number;
+  workers: number;
+}
 
 const PYTHON_DIR = join(dirname(import.meta.path), "python");
 const PYTHON_PATH = join(PYTHON_DIR, ".venv", "bin", "python");
@@ -125,7 +139,7 @@ export async function processDirectory(
   config: ExtractConfig,
   verbose: boolean = false,
 ): Promise<void> {
-  const { db, outputPrefix, batchSize } = config;
+  const { db, outputPrefix, limit } = config;
 
   // Get extraction stats from database
   const stats = await db.getExtractionStats();
@@ -138,7 +152,7 @@ export async function processDirectory(
 
   // Get unextracted documents from database
   console.log(`Querying database for unextracted documents...`);
-  const documents = await db.getUnextractedDocuments(batchSize);
+  const documents = await db.getUnextractedDocuments(limit);
 
   if (documents.length === 0) {
     console.log(`No unextracted documents found`);
@@ -168,7 +182,7 @@ const EXTRACTION_TIMEOUT_MS = 30_000; // 30 seconds per document
 const STALL_TIMEOUT_MS = 60_000; // 1 minute without progress
 
 async function processBatch(
-  documents: DocumentRecord[],
+  documents: { id: string }[],
   config: ExtractConfig,
   tempDir: string,
   verbose: boolean,
@@ -179,7 +193,7 @@ async function processBatch(
   const queue = [...documents];
 
   // Atomic queue retrieval to avoid race conditions
-  const getNextDocument = (): DocumentRecord | undefined => queue.shift();
+  const getNextDocument = () => queue.shift();
 
   // Progress tracking (only used when not verbose)
   const startTime = Date.now();
@@ -228,9 +242,9 @@ async function processBatch(
 
   // Process a single document with timeout covering all operations
   const processDocument = async (
-    doc: DocumentRecord,
+    doc: { id: string },
     extractor: PersistentExtractor,
-  ): Promise<{ success: boolean; needsRestart: boolean }> => {
+  ): Promise<void> => {
     const sourceKey = `${inputPrefix}/${doc.id}.docx`;
 
     // Download file from storage to temp
@@ -273,8 +287,6 @@ async function processBatch(
     if (verbose) {
       console.log(`  Extracted: ${doc.id} (${result.wordCount} words)`);
     }
-
-    return { success: true, needsRestart: false };
   };
 
   // Worker function - each worker uses its own extractor

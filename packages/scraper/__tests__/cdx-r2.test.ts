@@ -1,16 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { GetObjectCommand, ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
 import { streamCdxFromR2 } from "../commoncrawl/cdx-r2";
-import type { Config } from "../config";
 
-const config = {
-  cloudflare: {
-    accountId: "test",
-    r2AccessKeyId: "test",
-    r2SecretAccessKey: "test",
-    r2BucketName: "bucket",
-  },
-} as Config;
+const r2 = { accountId: "test", accessKeyId: "test", secretAccessKey: "test", bucket: "bucket" };
 
 describe("streamCdxFromR2", () => {
   test("follows R2 list continuation tokens", async () => {
@@ -32,7 +24,7 @@ describe("streamCdxFromR2", () => {
 
     try {
       const urls: string[] = [];
-      for await (const record of streamCdxFromR2(config, "C")) urls.push(record.url);
+      for await (const record of streamCdxFromR2(r2, "C")) urls.push(record.url);
       expect(urls).toEqual([
         "https://example.com/cdx-filtered/C/a.jsonl.docx",
         "https://example.com/cdx-filtered/C/b.jsonl.docx",

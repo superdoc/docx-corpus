@@ -1,39 +1,5 @@
-import { resolve } from "path";
-
-interface ParsedFlags {
-  push: boolean;
-  private: boolean;
-  output: string;
-}
-
-function parseFlags(args: string[]): ParsedFlags {
-  const flags: ParsedFlags = {
-    push: false,
-    private: false,
-    output: "docx-corpus.parquet",
-  };
-
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-    const next = args[i + 1];
-
-    switch (arg) {
-      case "--push":
-        flags.push = true;
-        break;
-      case "--private":
-        flags.private = true;
-        break;
-      case "--output":
-      case "-o":
-        flags.output = next || flags.output;
-        i++;
-        break;
-    }
-  }
-
-  return flags;
-}
+import { resolve } from "node:path";
+import { parseFlags } from "../flags";
 
 const HELP = `
 corpus export - Export corpus metadata to HuggingFace
@@ -62,12 +28,11 @@ Examples
 `;
 
 export async function runExport(args: string[]) {
-  if (args.includes("--help") || args.includes("-h")) {
-    console.log(HELP);
-    process.exit(0);
-  }
-
-  const flags = parseFlags(args);
+  const flags = parseFlags(args, HELP, {
+    push: { type: "boolean", default: false },
+    private: { type: "boolean", default: false },
+    output: { type: "string", short: "o", default: "docx-corpus.parquet" },
+  });
   const scriptPath = resolve(import.meta.dir, "../../../scripts/export-hf.py");
 
   const uvArgs = ["uv", "run", scriptPath];

@@ -1,12 +1,22 @@
-import { loadConfig } from "@docx-corpus/scraper";
-import { blank, createDb, header, keyValue, section } from "@docx-corpus/shared";
+import { blank, createDb, header, keyValue, loadDatabaseUrl, section } from "@docx-corpus/shared";
+import { parseFlags } from "../flags";
 import { version } from "../package.json";
 
-export async function runStatus(_args: string[]) {
+const HELP = `
+corpus status - Show pipeline stats
+
+Usage
+  corpus status
+
+Environment Variables
+  DATABASE_URL   PostgreSQL connection string (required)
+`;
+
+export async function runStatus(args: string[]) {
+  parseFlags(args, HELP, {});
   header("docx-corpus", version);
 
-  const config = loadConfig();
-  const db = await createDb(config.database.url);
+  const db = await createDb(loadDatabaseUrl());
 
   try {
     // Scraping stats
@@ -46,16 +56,6 @@ export async function runStatus(_args: string[]) {
       for (const [type, count] of Object.entries(llmStats.byType)) {
         keyValue(type, count);
       }
-    }
-
-    // Clustering stats
-    const clusterStats = await db.getClassificationStats();
-    if (clusterStats.classified > 0) {
-      blank();
-      section("Clustering");
-      keyValue("clustered", clusterStats.classified);
-      keyValue("pending", clusterStats.pending);
-      keyValue("clusters", clusterStats.clusters);
     }
   } finally {
     await db.close();

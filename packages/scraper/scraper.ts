@@ -1,8 +1,8 @@
 import {
   blank,
+  ConfigError,
   clearLines,
   createDb,
-  createLocalStorage,
   createR2Storage,
   type DbClient,
   formatDuration,
@@ -18,15 +18,18 @@ import pLimit from "p-limit";
 import { type CdxRecord, streamCdxFromR2 } from "./commoncrawl/cdx-r2";
 import { getLatestCrawlId } from "./commoncrawl/index";
 import { fetchWarcRecord, type WarcResult } from "./commoncrawl/warc";
-import { type Config, hasCloudflareCredentials } from "./config";
+import type { Config } from "./config";
 import { generateManifest } from "./manifest";
 import { createRateLimiter, type RateLimiter } from "./rate-limiter";
 import { computeHash, extractFilename, validateDocx } from "./validation";
 
 function md5Url(url: string): string {
-  const hasher = new Bun.CryptoHasher("md5");
-  hasher.update(url);
-  return hasher.digest("hex");
+  return new Bun.CryptoHasher("md5").update(url).digest("hex");
+}
+
+// Failures and duplicates store no content, so their IDs are scoped to the URL and crawl.
+function urlCrawlHash(url: string, crawlId: string): string {
+  return new Bun.CryptoHasher("sha256").update(url + crawlId).digest("hex");
 }
 
 export interface ProcessContext {
@@ -37,7 +40,6 @@ export interface ProcessContext {
   stats: { saved: number; skipped: number; failed: number };
   rateLimiter: RateLimiter;
   processedHashes: Set<string>;
-  force?: boolean;
   onError?: (status: number, url: string, message: string) => void;
   fetch?: typeof fetchWarcRecord;
 }
@@ -45,8 +47,7 @@ export interface ProcessContext {
 export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const { db, storage, config, crawlId, stats, rateLimiter, processedHashes, onError } = ctx;
   const fetch = ctx.fetch ?? fetchWarcRecord;
-  // Failures and duplicates store no content, so their IDs are scoped to the URL and crawl.
-  const urlCrawlHash = await computeHash(new TextEncoder().encode(record.url + crawlId));
+  const scopedId = urlCrawlHash(record.url, crawlId);
 
   // Download from WARC
   let result: WarcResult;
@@ -59,7 +60,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   } catch (err) {
     stats.failed++;
     await db.recordOutcome({
-      id: `failed-${urlCrawlHash}`,
+      id: `failed-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -77,7 +78,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   if (!validation.isValid) {
     stats.failed++;
     await db.recordOutcome({
-      id: `failed-${urlCrawlHash}`,
+      id: `failed-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -97,7 +98,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   if (existingByHash && existingByHash.source_url !== record.url) {
     stats.skipped++;
     await db.recordOutcome({
-      id: `dup-${urlCrawlHash}`,
+      id: `dup-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -142,7 +143,12 @@ export interface ScrapeOptions {
 export async function scrape(options: ScrapeOptions) {
   const { config, verbose, force, retryFailed, crawlIds, version } = options;
   const startTime = Date.now();
-  const useCloud = hasCloudflareCredentials(config);
+  const { r2 } = config;
+  if (!r2) {
+    throw new ConfigError(
+      "scrape needs R2 credentials: it reads filtered CDX records from R2 and stores documents there",
+    );
+  }
 
   // Keep-alive: prevent Bun from exiting when event loop has no native I/O pending
   // (Bun may drain the event loop while async generators/promises are still active)
@@ -170,10 +176,7 @@ export async function scrape(options: ScrapeOptions) {
   }
 
   section("Configuration");
-  keyValue(
-    "Storage",
-    useCloud ? `R2 (${config.cloudflare.r2BucketName})` : `local (${config.storage.localPath})`,
-  );
+  keyValue("Storage", `R2 (${r2.bucket})`);
   keyValue("Crawl(s)", resolvedCrawlIds.join(", "));
   keyValue("Workers", config.crawl.concurrency);
   if (force) keyValue("Force", "re-process all URLs");
@@ -181,17 +184,8 @@ export async function scrape(options: ScrapeOptions) {
   if (verbose) keyValue("Verbose", "enabled");
   blank();
 
-  // Initialize storage
-  const storage = useCloud
-    ? createR2Storage({
-        accountId: config.cloudflare.accountId,
-        accessKeyId: config.cloudflare.r2AccessKeyId,
-        secretAccessKey: config.cloudflare.r2SecretAccessKey,
-        bucket: config.cloudflare.r2BucketName,
-      })
-    : createLocalStorage(config.storage.localPath);
+  const storage = createR2Storage(r2);
 
-  // Initialize database
   const db = await createDb(config.database.url);
 
   // Pre-load known URL hashes for fast skip checking
@@ -292,7 +286,7 @@ export async function scrape(options: ScrapeOptions) {
     };
 
     try {
-      for await (const record of streamCdxFromR2(config, crawlId)) {
+      for await (const record of streamCdxFromR2(r2, crawlId)) {
         stats.discovered++;
 
         // Fast skip: URL already processed (outside downloadLimit for instant throughput)
@@ -300,11 +294,8 @@ export async function scrape(options: ScrapeOptions) {
           stats.skipped++;
           // Queue cross-crawl dup record if URL exists in DB but not under this crawl
           if (!crawlUrls.has(record.url)) {
-            const hasher = new Bun.CryptoHasher("sha256");
-            hasher.update(record.url + crawlId);
-            const crawlScopedHash = hasher.digest("hex");
             pendingDups.push({
-              id: `dup-${crawlScopedHash}`,
+              id: `dup-${urlCrawlHash(record.url, crawlId)}`,
               sourceUrl: record.url,
               crawlId,
               filename: extractFilename(record.url),
@@ -331,7 +322,6 @@ export async function scrape(options: ScrapeOptions) {
               stats,
               rateLimiter,
               processedHashes,
-              force,
               onError,
             });
             crawlUrls.add(record.url);
@@ -376,18 +366,12 @@ export async function scrape(options: ScrapeOptions) {
   keyValue("Failed", totalStats.failed);
   blank();
 
-  // Generate manifest
-  const cloudflareConfig = useCloud ? config.cloudflare : undefined;
-  const manifest = await generateManifest(
-    config.database.url,
-    config.storage.localPath,
-    cloudflareConfig,
-  );
+  const manifest = await generateManifest(config.database.url, config.storage.localPath, r2);
   if (manifest) {
     section("Manifest");
     keyValue("Documents", manifest.count);
     keyValue("File", "manifest.txt");
-    if (manifest.uploaded) keyValue("Uploaded", "R2");
+    keyValue("Uploaded", "R2");
     blank();
   }
 

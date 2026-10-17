@@ -3,12 +3,6 @@ import { InvocationType, InvokeCommand, LambdaClient } from "@aws-sdk/client-lam
 const CDX_PATHS_URL = (crawlId: string) =>
   `https://data.commoncrawl.org/crawl-data/${crawlId}/cc-index.paths.gz`;
 
-export interface CdxFilterResult {
-  crawlId: string;
-  totalPaths: number;
-  invoked: number;
-}
-
 /**
  * Fetch CDX index paths for a given crawl ID.
  * Returns the list of S3 keys (e.g. "crawl-data/CC-MAIN-2026-08/indexes/cdx-00001.gz").
@@ -29,15 +23,14 @@ async function fetchCdxPaths(crawlId: string): Promise<string[]> {
 
 /**
  * Invoke the cdx-filter Lambda for a single crawl.
- * Fires async (Event) invocations in parallel batches.
+ * Fires async (Event) invocations in parallel batches and returns how many it queued.
  */
 export async function invokeCdxFilter(
   crawlId: string,
-  options: { region?: string; concurrency?: number; functionName?: string } = {},
-): Promise<CdxFilterResult> {
+  options: { region?: string; concurrency?: number } = {},
+): Promise<number> {
   const region = options.region || "us-east-1";
   const concurrency = options.concurrency || 10;
-  const functionName = options.functionName || "cdx-filter";
 
   const lambda = new LambdaClient({ region });
   const paths = await fetchCdxPaths(crawlId);
@@ -52,7 +45,7 @@ export async function invokeCdxFilter(
       batch.map((cdxPath) =>
         lambda.send(
           new InvokeCommand({
-            FunctionName: functionName,
+            FunctionName: "cdx-filter",
             InvocationType: InvocationType.Event,
             Payload: JSON.stringify({ cdxPath, crawlId }),
           }),
@@ -64,5 +57,5 @@ export async function invokeCdxFilter(
   }
   console.log(); // newline after progress
 
-  return { crawlId, totalPaths: paths.length, invoked };
+  return invoked;
 }

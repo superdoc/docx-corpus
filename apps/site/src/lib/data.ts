@@ -129,27 +129,44 @@ export async function getCorpusStats() {
   return { totalClassified: total as number, languageCount: langs as number };
 }
 
-export async function getTypeFacets(): Promise<TypeFacet[]> {
-  const rows = await sql`
-    SELECT document_type AS id, COUNT(*)::int AS count
-    FROM documents
-    WHERE document_type IS NOT NULL
-    GROUP BY document_type
-    ORDER BY count DESC
-  ` as { id: string; count: number }[];
-  return rows.map(r => ({ id: r.id, label: TYPE_LABELS[r.id] ?? r.id, count: r.count }));
+// Types and topics are queried the same way; only the column and its labels differ.
+type FacetColumn = 'document_type' | 'document_topic';
+const LABELS: Record<FacetColumn, Record<string, string>> = {
+  document_type: TYPE_LABELS,
+  document_topic: TOPIC_LABELS,
+};
+const other = (column: FacetColumn): FacetColumn =>
+  column === 'document_type' ? 'document_topic' : 'document_type';
+// `column` is always one of the two literals above, never user input.
+const col = (column: FacetColumn) => sql.unsafe(column);
+
+async function countBy(column: FacetColumn, where?: { column: FacetColumn; value: string }) {
+  const rows = (where
+    ? await sql`
+        SELECT ${col(column)} AS id, COUNT(*)::int AS count
+        FROM documents
+        WHERE ${col(where.column)} = ${where.value} AND ${col(column)} IS NOT NULL
+        GROUP BY ${col(column)}
+        ORDER BY count DESC
+      `
+    : await sql`
+        SELECT ${col(column)} AS id, COUNT(*)::int AS count
+        FROM documents
+        WHERE ${col(column)} IS NOT NULL
+        GROUP BY ${col(column)}
+        ORDER BY count DESC
+      `) as { id: string; count: number }[];
+  return rows.map(r => ({ id: r.id, label: LABELS[column][r.id] ?? r.id, count: r.count }));
 }
 
-export async function getTopicFacets(): Promise<TopicFacet[]> {
-  const rows = await sql`
-    SELECT document_topic AS id, COUNT(*)::int AS count
-    FROM documents
-    WHERE document_topic IS NOT NULL
-    GROUP BY document_topic
-    ORDER BY count DESC
-  ` as { id: string; count: number }[];
-  return rows.map(r => ({ id: r.id, label: TOPIC_LABELS[r.id] ?? r.id, count: r.count }));
-}
+export const getTypeFacets = (): Promise<TypeFacet[]> => countBy('document_type');
+export const getTopicFacets = (): Promise<TopicFacet[]> => countBy('document_topic');
+
+// Topic breakdown within a single type (and vice versa).
+export const getTopicsForType = (typeId: string): Promise<TopicFacet[]> =>
+  countBy('document_topic', { column: 'document_type', value: typeId });
+export const getTypesForTopic = (topicId: string): Promise<TypeFacet[]> =>
+  countBy('document_type', { column: 'document_topic', value: topicId });
 
 // Sample documents for a single type/topic facet. Ordered by confidence
 // DESC so the most confidently labeled rows surface first.
@@ -162,50 +179,19 @@ export interface SampleDocument {
   confidence: number;
 }
 
-export async function getSamplesByType(typeId: string, limit = 5): Promise<SampleDocument[]> {
+async function getSamples(column: FacetColumn, value: string, limit: number) {
   return await sql`
     SELECT id, original_filename AS filename, document_type AS type,
            document_topic AS topic, language, classification_confidence AS confidence
     FROM documents
-    WHERE document_type = ${typeId} AND document_topic IS NOT NULL
+    WHERE ${col(column)} = ${value} AND ${col(other(column))} IS NOT NULL
     ORDER BY classification_confidence DESC NULLS LAST
     LIMIT ${limit}
   ` as SampleDocument[];
 }
 
-export async function getSamplesByTopic(topicId: string, limit = 5): Promise<SampleDocument[]> {
-  return await sql`
-    SELECT id, original_filename AS filename, document_type AS type,
-           document_topic AS topic, language, classification_confidence AS confidence
-    FROM documents
-    WHERE document_topic = ${topicId} AND document_type IS NOT NULL
-    ORDER BY classification_confidence DESC NULLS LAST
-    LIMIT ${limit}
-  ` as SampleDocument[];
-}
-
-// Topic breakdown within a single type (and vice versa).
-export async function getTopicsForType(typeId: string): Promise<TopicFacet[]> {
-  const rows = await sql`
-    SELECT document_topic AS id, COUNT(*)::int AS count
-    FROM documents
-    WHERE document_type = ${typeId} AND document_topic IS NOT NULL
-    GROUP BY document_topic
-    ORDER BY count DESC
-  ` as { id: string; count: number }[];
-  return rows.map(r => ({ id: r.id, label: TOPIC_LABELS[r.id] ?? r.id, count: r.count }));
-}
-
-export async function getTypesForTopic(topicId: string): Promise<TypeFacet[]> {
-  const rows = await sql`
-    SELECT document_type AS id, COUNT(*)::int AS count
-    FROM documents
-    WHERE document_topic = ${topicId} AND document_type IS NOT NULL
-    GROUP BY document_type
-    ORDER BY count DESC
-  ` as { id: string; count: number }[];
-  return rows.map(r => ({ id: r.id, label: TYPE_LABELS[r.id] ?? r.id, count: r.count }));
-}
+export const getSamplesByType = (typeId: string, limit = 5) => getSamples('document_type', typeId, limit);
+export const getSamplesByTopic = (topicId: string, limit = 5) => getSamples('document_topic', topicId, limit);
 
 // Per-facet language breakdown with API-style percentages (denominator =
 // sum of the top-N languages for the facet, matching what the API returns
@@ -214,33 +200,21 @@ export interface FacetLanguage { code: string; count: number; percentage: number
 export interface FacetLanguageResult { languages: FacetLanguage[]; denominator: number; distinct: number; }
 
 async function getLanguagesForFacet(
-  column: 'document_type' | 'document_topic',
+  column: FacetColumn,
   value: string,
   limit = 20,
 ): Promise<FacetLanguageResult> {
-  // Top-N for display
-  const rowsQuery = column === 'document_type'
-    ? sql`
-        SELECT language AS code, COUNT(*)::int AS count
-        FROM documents
-        WHERE document_type = ${value} AND language IS NOT NULL
-        GROUP BY language
-        ORDER BY count DESC
-        LIMIT ${limit}
-      `
-    : sql`
-        SELECT language AS code, COUNT(*)::int AS count
-        FROM documents
-        WHERE document_topic = ${value} AND language IS NOT NULL
-        GROUP BY language
-        ORDER BY count DESC
-        LIMIT ${limit}
-      `;
-  const distinctQuery = column === 'document_type'
-    ? sql`SELECT COUNT(DISTINCT language)::int AS n FROM documents WHERE document_type = ${value} AND language IS NOT NULL`
-    : sql`SELECT COUNT(DISTINCT language)::int AS n FROM documents WHERE document_topic = ${value} AND language IS NOT NULL`;
-
-  const [rows, distinctRow] = await Promise.all([rowsQuery, distinctQuery]);
+  const [rows, distinctRow] = await Promise.all([
+    sql`
+      SELECT language AS code, COUNT(*)::int AS count
+      FROM documents
+      WHERE ${col(column)} = ${value} AND language IS NOT NULL
+      GROUP BY language
+      ORDER BY count DESC
+      LIMIT ${limit}
+    `,
+    sql`SELECT COUNT(DISTINCT language)::int AS n FROM documents WHERE ${col(column)} = ${value} AND language IS NOT NULL`,
+  ]);
   const top = rows as { code: string; count: number }[];
   const denominator = top.reduce((s, r) => s + r.count, 0);
   const languages = top.map(r => ({
@@ -251,12 +225,10 @@ async function getLanguagesForFacet(
   return { languages, denominator, distinct: (distinctRow as { n: number }[])[0].n };
 }
 
-export async function getLanguagesForType(typeId: string, limit = 20): Promise<FacetLanguageResult> {
-  return getLanguagesForFacet('document_type', typeId, limit);
-}
-export async function getLanguagesForTopic(topicId: string, limit = 20): Promise<FacetLanguageResult> {
-  return getLanguagesForFacet('document_topic', topicId, limit);
-}
+export const getLanguagesForType = (typeId: string, limit = 20) =>
+  getLanguagesForFacet('document_type', typeId, limit);
+export const getLanguagesForTopic = (topicId: string, limit = 20) =>
+  getLanguagesForFacet('document_topic', topicId, limit);
 
 // Confidence histogram: 8 ranges from below-0.3 to 0.9-1.0.
 // Counts are computed against the full classified set.

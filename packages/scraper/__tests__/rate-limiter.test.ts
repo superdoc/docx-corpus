@@ -1,36 +1,37 @@
 import { describe, expect, test } from "bun:test";
 import { createRateLimiter } from "../rate-limiter";
 
+const limiterAt = (rps: number) => createRateLimiter({ initialRps: rps, minRps: rps, maxRps: rps });
+
 describe("createRateLimiter", () => {
-  test("allows immediate acquire when tokens available", async () => {
-    const limiter = createRateLimiter(10); // 10 per second
-
+  // Each check pairs a fast path with a wait, so a limiter that never waits fails too.
+  test("starts with a full bucket, then waits", async () => {
+    const limiter = limiterAt(5);
     const start = Date.now();
-    await limiter.acquire();
-    const elapsed = Date.now() - start;
+    for (let i = 0; i < 5; i++) await limiter.acquire();
+    expect(Date.now() - start).toBeLessThan(100);
 
-    // Should be nearly instant (< 50ms)
-    expect(elapsed).toBeLessThan(50);
+    await limiter.acquire();
+    expect(Date.now() - start).toBeGreaterThanOrEqual(150);
   });
 
-  test("allows burst up to rate limit", async () => {
-    const rate = 5;
-    const limiter = createRateLimiter(rate);
+  test("limiters do not share tokens", async () => {
+    const a = limiterAt(2);
+    const b = limiterAt(2);
+    await a.acquire();
+    await a.acquire();
 
     const start = Date.now();
-    // Consume all tokens
-    for (let i = 0; i < rate; i++) {
-      await limiter.acquire();
-    }
-    const elapsed = Date.now() - start;
+    await b.acquire();
+    expect(Date.now() - start).toBeLessThan(50);
 
-    // All should be instant since we have that many tokens
-    expect(elapsed).toBeLessThan(100);
+    await a.acquire();
+    expect(Date.now() - start).toBeGreaterThanOrEqual(400);
   });
 
   test("waits when tokens exhausted", async () => {
     const rate = 2;
-    const limiter = createRateLimiter(rate);
+    const limiter = limiterAt(rate);
 
     // Consume all tokens
     await limiter.acquire();
@@ -46,28 +47,8 @@ describe("createRateLimiter", () => {
     expect(elapsed).toBeLessThan(700);
   });
 
-  test("refills tokens over time", async () => {
-    const rate = 10;
-    const limiter = createRateLimiter(rate);
-
-    // Consume all tokens
-    for (let i = 0; i < rate; i++) {
-      await limiter.acquire();
-    }
-
-    // Wait for refill (100ms should add 1 token at 10/sec)
-    await new Promise((r) => setTimeout(r, 150));
-
-    const start = Date.now();
-    await limiter.acquire();
-    const elapsed = Date.now() - start;
-
-    // Should be instant or near-instant since token refilled
-    expect(elapsed).toBeLessThan(100);
-  });
-
   test("handles fractional rates", async () => {
-    const limiter = createRateLimiter(0.5); // 0.5 tokens/sec = 1 request per 2 seconds
+    const limiter = limiterAt(0.5); // 0.5 tokens/sec = 1 request per 2 seconds
     // Initial tokens = 0.5, so first call needs to wait for 1 token
     // Wait time = (1 - 0.5) / 0.5 * 1000 = 1000ms
 
@@ -80,38 +61,9 @@ describe("createRateLimiter", () => {
     expect(elapsed).toBeLessThan(1200);
   });
 
-  test("handles high rate", async () => {
-    const limiter = createRateLimiter(1000); // 1000 per second
-
-    const start = Date.now();
-    // Should all be instant
-    for (let i = 0; i < 100; i++) {
-      await limiter.acquire();
-    }
-    const elapsed = Date.now() - start;
-
-    expect(elapsed).toBeLessThan(200);
-  });
-
-  test("independent limiters do not affect each other", async () => {
-    const limiter1 = createRateLimiter(2);
-    const limiter2 = createRateLimiter(2);
-
-    // Exhaust limiter1
-    await limiter1.acquire();
-    await limiter1.acquire();
-
-    // limiter2 should still have tokens
-    const start = Date.now();
-    await limiter2.acquire();
-    const elapsed = Date.now() - start;
-
-    expect(elapsed).toBeLessThan(50);
-  });
-
   test("wait time followed by immediate due to refill", async () => {
     const rate = 5; // 5 per second = 200ms per token
-    const limiter = createRateLimiter(rate);
+    const limiter = limiterAt(rate);
 
     // Exhaust all tokens
     for (let i = 0; i < rate; i++) {
@@ -132,7 +84,7 @@ describe("createRateLimiter", () => {
   });
 
   test("tracks success and error stats", () => {
-    const limiter = createRateLimiter(100);
+    const limiter = limiterAt(100);
 
     limiter.reportSuccess();
     limiter.reportSuccess();

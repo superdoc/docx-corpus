@@ -1,7 +1,6 @@
 ---
 import WidePageLayout from '../layouts/WidePageLayout.astro';
-import { canonicalUrl } from '../lib/seo';
-import { routes } from '../lib/routes';
+import { absoluteUrl, routes } from '../lib/routes';
 
 const title = 'docx-corpus: 736K classified Word documents. Open DOCX dataset.';
 const description = '736K+ real Word .docx files from Common Crawl, classified by type, topic, and language. Open dataset for document AI, NLP, and parsing research.';
@@ -14,7 +13,7 @@ const structuredData = {
   '@type': 'Dataset',
   name: 'docx-corpus',
   description: 'The largest open corpus of classified Word documents. 736K+ real .docx files from the public web, classified into 10 document types and 9 topics across 46+ languages.',
-  url: canonicalUrl(routes.home()),
+  url: absoluteUrl(routes.home()),
   license: 'https://opendatacommons.org/licenses/by/1-0/',
   creator: { '@type': 'Organization', name: 'SuperDoc', url: 'https://superdoc.dev' },
   distribution: [
@@ -1173,14 +1172,10 @@ curl "https://api.docxcorp.us/manifest?type=legal&amp;lang=en&amp;min_confidence
             const key = this.dataset.clear;
             filters[key] = key === 'minConf' ? 0 : '';
             currentPage = 1;
-            updateActiveStates();
+            renderFilters();
             fetchDocuments();
           });
         });
-      }
-
-      function updateActiveStates() {
-        renderFilters();
       }
 
       function buildFilterParams() {
@@ -1274,7 +1269,7 @@ curl "https://api.docxcorp.us/manifest?type=legal&amp;lang=en&amp;min_confidence
           cell.addEventListener('click', function () {
             filters.type = filters.type === this.dataset.type ? '' : this.dataset.type;
             currentPage = 1;
-            updateActiveStates();
+            renderFilters();
             fetchDocuments();
             $('explore').scrollIntoView({ behavior: 'smooth', block: 'start' });
           });
@@ -1295,7 +1290,7 @@ curl "https://api.docxcorp.us/manifest?type=legal&amp;lang=en&amp;min_confidence
           cell.addEventListener('click', function () {
             filters.topic = filters.topic === this.dataset.topic ? '' : this.dataset.topic;
             currentPage = 1;
-            updateActiveStates();
+            renderFilters();
             fetchDocuments();
             $('explore').scrollIntoView({ behavior: 'smooth', block: 'start' });
           });
@@ -1333,7 +1328,7 @@ curl "https://api.docxcorp.us/manifest?type=legal&amp;lang=en&amp;min_confidence
           el.addEventListener('click', function () {
             filters.lang = filters.lang === this.dataset.lang ? '' : this.dataset.lang;
             currentPage = 1;
-            updateActiveStates();
+            renderFilters();
             fetchDocuments();
             $('explore').scrollIntoView({ behavior: 'smooth', block: 'start' });
           });
@@ -1379,7 +1374,7 @@ curl "https://api.docxcorp.us/manifest?type=legal&amp;lang=en&amp;min_confidence
           $('conf-value').textContent = val > 0 ? val.toFixed(2) : 'any';
           filters.minConf = val;
           currentPage = 1;
-          updateActiveStates();
+          renderFilters();
           fetchDocuments();
         });
 

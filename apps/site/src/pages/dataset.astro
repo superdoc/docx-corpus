@@ -2,8 +2,7 @@
 import WidePageLayout from '../layouts/WidePageLayout.astro';
 import MetaRows from '../components/MetaRows.astro';
 import SeeAlso from '../components/SeeAlso.astro';
-import { routes } from '../lib/routes';
-import { canonicalUrl } from '../lib/seo';
+import { absoluteUrl, routes } from '../lib/routes';
 import { getCorpusStats } from '../lib/data';
 
 const stats = await getCorpusStats();
@@ -16,7 +15,7 @@ const structuredData = {
   '@type': 'Dataset',
   name: 'docx-corpus',
   description: 'The largest open corpus of classified Word documents. 736K+ real .docx files from the public web, classified into 10 document types and 9 topics across 76 languages.',
-  url: canonicalUrl(routes.dataset()),
+  url: absoluteUrl(routes.dataset()),
   license: 'https://opendatacommons.org/licenses/by/1-0/',
   creator: { '@type': 'Organization', name: 'SuperDoc', url: 'https://superdoc.dev' },
   distribution: [
@@ -97,7 +96,7 @@ const structuredData = {
 
   <section class="prose">
     <div class="section-label">Citing</div>
-    <p>docx-corpus (2026). Open corpus of classified Word documents from the public web. <a href={canonicalUrl(routes.home())}>https://docxcorp.us</a>. Built by SuperDoc.</p>
+    <p>docx-corpus (2026). Open corpus of classified Word documents from the public web. <a href={absoluteUrl(routes.home())}>https://docxcorp.us</a>. Built by SuperDoc.</p>
   </section>
 
   <SeeAlso links={[

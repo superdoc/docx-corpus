@@ -6,16 +6,15 @@ export function section(title: string) {
   console.log(`${title}`);
 }
 
-export function keyValue(key: string, value: string | number, indent = 2) {
-  const padding = " ".repeat(indent);
-  console.log(`${padding}${key.padEnd(10)} ${value}`);
+export function keyValue(key: string, value: string | number) {
+  console.log(`  ${key.padEnd(10)} ${value}`);
 }
 
 export function blank() {
   console.log();
 }
 
-export function progressBar(current: number, total: number, width = 20): string {
+function progressBar(current: number, total: number, width = 20): string {
   const ratio = total > 0 ? Math.min(current / total, 1) : 0;
   const filled = Math.round(ratio * width);
   const empty = width - filled;

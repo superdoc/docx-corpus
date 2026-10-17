@@ -6,9 +6,6 @@ export interface Storage {
   /** Read file contents, returns null if not found */
   read(key: string): Promise<Uint8Array | null>;
 
-  /** Check if file exists */
-  exists(key: string): Promise<boolean>;
-
   /** Write file contents (overwrites if exists) */
   write(key: string, content: Uint8Array | string): Promise<void>;
 

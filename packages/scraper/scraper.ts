@@ -24,9 +24,12 @@ import { createRateLimiter, type RateLimiter } from "./rate-limiter";
 import { computeHash, extractFilename, validateDocx } from "./validation";
 
 function md5Url(url: string): string {
-  const hasher = new Bun.CryptoHasher("md5");
-  hasher.update(url);
-  return hasher.digest("hex");
+  return new Bun.CryptoHasher("md5").update(url).digest("hex");
+}
+
+// Failures and duplicates store no content, so their IDs are scoped to the URL and crawl.
+function urlCrawlHash(url: string, crawlId: string): string {
+  return new Bun.CryptoHasher("sha256").update(url + crawlId).digest("hex");
 }
 
 export interface ProcessContext {
@@ -37,7 +40,6 @@ export interface ProcessContext {
   stats: { saved: number; skipped: number; failed: number };
   rateLimiter: RateLimiter;
   processedHashes: Set<string>;
-  force?: boolean;
   onError?: (status: number, url: string, message: string) => void;
   fetch?: typeof fetchWarcRecord;
 }
@@ -45,8 +47,7 @@ export interface ProcessContext {
 export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   const { db, storage, config, crawlId, stats, rateLimiter, processedHashes, onError } = ctx;
   const fetch = ctx.fetch ?? fetchWarcRecord;
-  // Failures and duplicates store no content, so their IDs are scoped to the URL and crawl.
-  const urlCrawlHash = await computeHash(new TextEncoder().encode(record.url + crawlId));
+  const scopedId = urlCrawlHash(record.url, crawlId);
 
   // Download from WARC
   let result: WarcResult;
@@ -59,7 +60,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   } catch (err) {
     stats.failed++;
     await db.recordOutcome({
-      id: `failed-${urlCrawlHash}`,
+      id: `failed-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -77,7 +78,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   if (!validation.isValid) {
     stats.failed++;
     await db.recordOutcome({
-      id: `failed-${urlCrawlHash}`,
+      id: `failed-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -97,7 +98,7 @@ export async function processRecord(record: CdxRecord, ctx: ProcessContext) {
   if (existingByHash && existingByHash.source_url !== record.url) {
     stats.skipped++;
     await db.recordOutcome({
-      id: `dup-${urlCrawlHash}`,
+      id: `dup-${scopedId}`,
       source_url: record.url,
       crawl_id: crawlId,
       original_filename: extractFilename(record.url),
@@ -300,11 +301,8 @@ export async function scrape(options: ScrapeOptions) {
           stats.skipped++;
           // Queue cross-crawl dup record if URL exists in DB but not under this crawl
           if (!crawlUrls.has(record.url)) {
-            const hasher = new Bun.CryptoHasher("sha256");
-            hasher.update(record.url + crawlId);
-            const crawlScopedHash = hasher.digest("hex");
             pendingDups.push({
-              id: `dup-${crawlScopedHash}`,
+              id: `dup-${urlCrawlHash(record.url, crawlId)}`,
               sourceUrl: record.url,
               crawlId,
               filename: extractFilename(record.url),
@@ -331,7 +329,6 @@ export async function scrape(options: ScrapeOptions) {
               stats,
               rateLimiter,
               processedHashes,
-              force,
               onError,
             });
             crawlUrls.add(record.url);

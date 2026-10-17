@@ -22,6 +22,18 @@ export function createR2Storage(config: R2Config): Storage {
 
   const bucket = config.bucket;
 
+  async function exists(key: string): Promise<boolean> {
+    try {
+      await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+      return true;
+    } catch (err: any) {
+      if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
+        return false;
+      }
+      throw err;
+    }
+  }
+
   const storage: Storage = {
     async read(key: string): Promise<Uint8Array | null> {
       try {
@@ -31,18 +43,6 @@ export function createR2Storage(config: R2Config): Storage {
       } catch (err: any) {
         if (err.name === "NoSuchKey" || err.$metadata?.httpStatusCode === 404) {
           return null;
-        }
-        throw err;
-      }
-    },
-
-    async exists(key: string): Promise<boolean> {
-      try {
-        await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
-        return true;
-      } catch (err: any) {
-        if (err.name === "NotFound" || err.$metadata?.httpStatusCode === 404) {
-          return false;
         }
         throw err;
       }
@@ -64,7 +64,7 @@ export function createR2Storage(config: R2Config): Storage {
     },
 
     async writeIfNotExists(key: string, content: Uint8Array): Promise<boolean> {
-      if (await storage.exists(key)) return false;
+      if (await exists(key)) return false;
       await storage.write(key, content);
       return true;
     },

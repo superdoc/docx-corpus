@@ -1,8 +1,4 @@
-export {
-  createDb,
-  type DbClient,
-  type DocumentRecord,
-} from "./db";
+export { createDb, type DbClient } from "./db";
 
 export {
   createLocalStorage,

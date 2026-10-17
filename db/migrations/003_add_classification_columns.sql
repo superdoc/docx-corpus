@@ -1,6 +1,5 @@
 -- Migration: Add document type/topic classification columns
--- These columns are written by the classification pipeline (classify_documents.py)
--- which uses HDBSCAN clustering + LLM labeling to assign types and topics
+-- These columns are written by scripts/classification/classify.py
 
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS document_type VARCHAR(50);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS document_topic VARCHAR(50);

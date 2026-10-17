@@ -47,16 +47,6 @@ export async function runStatus(_args: string[]) {
         keyValue(type, count);
       }
     }
-
-    // Clustering stats
-    const clusterStats = await db.getClassificationStats();
-    if (clusterStats.classified > 0) {
-      blank();
-      section("Clustering");
-      keyValue("clustered", clusterStats.classified);
-      keyValue("pending", clusterStats.pending);
-      keyValue("clusters", clusterStats.clusters);
-    }
   } finally {
     await db.close();
   }

@@ -44,7 +44,7 @@ export function validateDocx(data: Uint8Array): ValidationResult {
     };
   }
 
-  if (!text.includes("word/document.xml") && !text.includes("word/document")) {
+  if (!text.includes("word/document")) {
     return {
       isValid: false,
       error: "Missing word/document.xml - not a valid Word document",

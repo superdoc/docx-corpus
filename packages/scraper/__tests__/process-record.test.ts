@@ -14,7 +14,6 @@ const url = process.env.TEST_DATABASE_URL;
 
 const storage: Storage = {
   read: async () => null,
-  exists: async () => false,
   write: async () => {},
   writeIfNotExists: async () => true,
 };
@@ -32,8 +31,6 @@ const URL_B = "https://b.example/x.docx";
 
 const returns = (content: Uint8Array) => async (): Promise<WarcResult> => ({
   content,
-  httpStatus: 200,
-  contentType: "",
   contentLength: content.length,
 });
 const fails = async (): Promise<WarcResult> => {
@@ -71,7 +68,7 @@ describe.skipIf(!url)("processRecord failed records", () => {
       config: { crawl: { timeoutMs: 1000 } } as Config,
       crawlId,
       stats: { saved: 0, skipped: 0, failed: 0 },
-      rateLimiter: createRateLimiter(1000),
+      rateLimiter: createRateLimiter({ initialRps: 1000, minRps: 1, maxRps: 1000 }),
       processedHashes: new Set(),
       fetch,
     });

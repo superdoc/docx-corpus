@@ -14,10 +14,6 @@ export function createLocalStorage(basePath: string): Storage {
       return new Uint8Array(await file.arrayBuffer());
     },
 
-    async exists(key: string): Promise<boolean> {
-      return Bun.file(join(basePath, key)).exists();
-    },
-
     async write(key: string, content: Uint8Array | string): Promise<void> {
       const filePath = join(basePath, key);
       // Ensure parent directory exists

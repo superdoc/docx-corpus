@@ -25,7 +25,7 @@ Options
   --help, -h        Show this help
 
 Environment Variables
-  AWS_REGION / AWS_PROFILE    AWS credentials for Lambda invocation
+  AWS_PROFILE                 AWS credentials for Lambda invocation
   CLOUDFLARE_ACCOUNT_ID       Cloudflare account ID (for R2 lookup)
   R2_ACCESS_KEY_ID            R2 access key
   R2_SECRET_ACCESS_KEY        R2 secret key
@@ -71,8 +71,8 @@ export async function runCdxFilter(args: string[]) {
     }
 
     section(`Filtering ${crawlId}`);
-    const result = await invokeCdxFilter(crawlId, { region, concurrency });
-    console.log(`Queued ${result.invoked} Lambda invocations for ${crawlId}`);
+    const invoked = await invokeCdxFilter(crawlId, { region, concurrency });
+    console.log(`Queued ${invoked} Lambda invocations for ${crawlId}`);
     blank();
     console.log(
       "Monitor progress: aws logs tail /aws/lambda/cdx-filter --follow --region us-east-1",
@@ -123,8 +123,8 @@ export async function runCdxFilter(args: string[]) {
   section(`Filtering ${toProcess.length} crawl${toProcess.length > 1 ? "s" : ""}`);
   for (const id of toProcess) {
     console.log(`\nProcessing ${id}...`);
-    const result = await invokeCdxFilter(id, { region, concurrency });
-    console.log(`  Queued ${result.invoked} Lambda invocations`);
+    const invoked = await invokeCdxFilter(id, { region, concurrency });
+    console.log(`  Queued ${invoked} Lambda invocations`);
   }
 
   blank();

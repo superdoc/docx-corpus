@@ -7,8 +7,6 @@ const USER_AGENT = "docx-corpus (https://github.com/superdoc/docx-corpus)";
 
 export interface WarcResult {
   content: Uint8Array;
-  httpStatus: number;
-  contentType: string;
   contentLength: number;
 }
 
@@ -200,16 +198,9 @@ export function parseWarcRecord(data: Uint8Array): WarcResult {
   const httpHeaders = decoder.decode(httpData.slice(0, httpHeaderEnd));
   const httpLines = httpHeaders.split("\r\n");
 
-  // Parse status line: "HTTP/1.1 200 OK"
-  const statusMatch = httpLines[0].match(/HTTP\/[\d.]+\s+(\d+)/);
-  const httpStatus = statusMatch ? parseInt(statusMatch[1], 10) : 0;
-
-  // Find Content-Type and Content-Length headers
-  let contentType = "";
+  // Find the Content-Length header
   let httpContentLength: number | null = null;
   for (const line of httpLines) {
-    const ctMatch = line.match(/^Content-Type:\s*(.+)/i);
-    if (ctMatch && !contentType) contentType = ctMatch[1].trim();
     const clMatch = line.match(/^Content-Length:\s*(\d+)/i);
     if (clMatch && httpContentLength === null) httpContentLength = parseInt(clMatch[1], 10);
   }
@@ -229,8 +220,6 @@ export function parseWarcRecord(data: Uint8Array): WarcResult {
 
   return {
     content,
-    httpStatus,
-    contentType,
     contentLength: content.length,
   };
 }

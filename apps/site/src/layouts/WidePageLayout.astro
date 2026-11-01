@@ -72,6 +72,10 @@ const structuredDataJson = structuredData && JSON.stringify(structuredData).repl
     )}
   </head>
   <body class="wide">
+    <script>
+      import { installGrowthAttribution } from '../lib/growth-attribution.mjs';
+      installGrowthAttribution({ sourceProject: 'docx_corpus', measurementId: 'G-C9QG5MXVL5' });
+    </script>
     <Header active={active} />
     <main>
       {crumb && crumb.length > 0 && (

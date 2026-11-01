@@ -30,6 +30,10 @@ test('single listener preserves navigation and never emits raw link/query data',
   assert.equal(s.calls[0][1], 'superdoc_cta_clicked'); assert.doesNotMatch(JSON.stringify(s.calls), /private|email=|https:|utm_/);
   stop(); assert.equal(s.listeners.size, 0);
 });
+test('client-side router prevention does not hide CTA intent', () => {
+  const s = surface(); installGrowthAttribution({ ...s, sourceProject: 'ooxml_dev', measurementId: 'G-SYNTHETIC' });
+  s.click.defaultPrevented = true; s.listeners.get('click')(s.click); assert.equal(s.calls.length, 1);
+});
 test('provider errors and privacy changes after installation never break a click', () => {
   const s = surface(); installGrowthAttribution({ ...s, sourceProject: 'ooxml_dev', measurementId: 'G-SYNTHETIC' });
   s.win.gtag = () => { throw new Error('blocked'); }; assert.doesNotThrow(() => s.listeners.get('click')(s.click));

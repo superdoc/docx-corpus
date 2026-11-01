@@ -45,7 +45,7 @@ export function installGrowthAttribution({ sourceProject, measurementId, win = g
   if (INSTALLED.has(doc)) return () => {};
   const click = event => {
     try {
-      if (!analyticsAllowed(win, sourceProject) || event.button > 0 || event.defaultPrevented) return;
+      if (!analyticsAllowed(win, sourceProject) || event.button > 0) return;
       const anchor = event.target?.closest?.('a[href]');
       if (!anchor) return;
       const destination = classifyDestination(anchor.getAttribute('href'), win.location.origin);
@@ -58,9 +58,9 @@ export function installGrowthAttribution({ sourceProject, measurementId, win = g
       if (payload) win.gtag('event', 'superdoc_cta_clicked', payload);
     } catch { /* Analytics must never interrupt navigation or the developer tool. */ }
   };
-  doc.addEventListener('click', click, { passive: true });
+  doc.addEventListener('click', click, { passive: true, capture: true });
   INSTALLED.set(doc, click);
   return () => {
-    if (INSTALLED.get(doc) === click) { doc.removeEventListener('click', click); INSTALLED.delete(doc); }
+    if (INSTALLED.get(doc) === click) { doc.removeEventListener('click', click, true); INSTALLED.delete(doc); }
   };
 }

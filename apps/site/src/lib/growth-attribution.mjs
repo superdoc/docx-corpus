@@ -18,8 +18,8 @@ export function analyticsAllowed(win, sourceProject) {
     !/^\/(account|checkout|trial|sign-in|sign-up)(?:\/|$)/.test(win?.location?.pathname ?? ''));
 }
 
-// Classify locally. No URL, query, fragment, referrer, anchor text or document ID
-// is ever included in an analytics payload.
+// Classify locally. Observed URLs, queries, fragments, referrers, anchor text
+// and document IDs are never copied into this event.
 export function classifyDestination(href, origin) {
   let url;
   try { url = new URL(href, origin); } catch { return null; }
@@ -37,7 +37,11 @@ export function ctaPayload({ sourceProject, measurementId, destination, placemen
       !['superdoc_home', 'docs', 'quickstart', 'pricing', 'signup'].includes(destination) ||
       !PLACEMENTS.has(placement)) return null;
   return Object.freeze({ send_to: measurementId, event_version: 'growth-v1',
-    source_project: sourceProject, destination, placement });
+    source_project: sourceProject, destination, placement,
+    // gtag otherwise inherits location, title and referrer from the page.
+    // These event-scoped constants do not change the site's existing tag config.
+    page_location: `https://${PROJECTS[sourceProject][0]}/`,
+    page_title: `SuperDoc / ${sourceProject}`, page_referrer: '' });
 }
 
 export function installGrowthAttribution({ sourceProject, measurementId, win = globalThis.window, doc = globalThis.document } = {}) {

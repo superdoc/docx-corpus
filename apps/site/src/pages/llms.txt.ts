@@ -20,7 +20,7 @@ The largest open corpus of classified Word documents. ${stats.totalClassified.to
 
 Documents are classified using fine-tuned XLM-RoBERTa text classifiers. See ${absoluteUrl(routes.classification())} for full methodology and ${absoluteUrl(routes.quality())} for the confidence distribution.
 
-Built by [SuperDoc](https://superdoc.dev) - DOCX editing and tooling.
+Built by [SuperDoc](https://superdoc.dev), the open source DOCX Editor and Agent SDK for reviewing, filling, and editing documents.
 
 ## Reference pages
 

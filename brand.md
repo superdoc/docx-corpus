@@ -41,12 +41,12 @@ Document AI research runs on scanned images and PDFs. DOCX, the format people ac
 | "736K+ classified DOCX files" | "The world's most comprehensive document intelligence platform" |
 | "Scraped from Common Crawl" | "Powered by cutting-edge web mining technology" |
 | "Open dataset on Hugging Face" | "Democratizing access to document data" |
-| "Built by SuperDoc — DOCX editing and tooling" | "Backed by industry-leading document technology" |
+| "Built by SuperDoc — DOCX Editor and Agent SDK" | "Backed by industry-leading document technology" |
 | "Download the dataset" | "Get started on your document AI journey" |
 
 **Tagline**: Every Word document on the public web. Classified and open. Use it on the homepage, the GitHub README, and the Hugging Face dataset card.
 
-**Attribution**: "Built by SuperDoc — DOCX editing and tooling."
+**Attribution**: "Built by SuperDoc — DOCX Editor and Agent SDK."
 
 ## Visual
 

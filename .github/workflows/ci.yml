@@ -35,6 +35,9 @@ jobs:
 
       - run: bun install
 
+      - name: Growth attribution privacy tests
+        run: bun run test:growth
+
       - name: Lint
         run: bun run lint
 

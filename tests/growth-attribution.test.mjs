@@ -4,7 +4,7 @@ import { analyticsAllowed, classifyDestination, ctaPayload, installGrowthAttribu
 function surface() {
   const calls = [], listeners = new Map();
   const navigation = { prevented: 0, stopped: 0, assigned: 0, replaced: 0 };
-  const win = { location: { hostname: 'ooxml.dev', origin: 'https://ooxml.dev', pathname: '/', href: 'https://ooxml.dev/', assign() { navigation.assigned++; }, replace() { navigation.replaced++; } }, navigator: {}, gtag: (...args) => calls.push(args) };
+  const win = { location: { hostname: 'ooxml.dev', origin: 'https://ooxml.dev', pathname: '/', href: 'https://ooxml.dev/', assign() { navigation.assigned++; }, replace() { navigation.replaced++; } }, navigator: {}, superdocAnalyticsConsent: true, gtag: (...args) => calls.push(args) };
   const doc = {
     addEventListener(name, fn) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(fn); },
     removeEventListener(name, fn) { const callbacks = listeners.get(name); callbacks?.delete(fn); if (!callbacks?.size) listeners.delete(name); },

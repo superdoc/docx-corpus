@@ -22,6 +22,12 @@ Documents are classified using fine-tuned XLM-RoBERTa text classifiers. See ${ab
 
 Built by [SuperDoc](https://superdoc.dev), the open source DOCX Editor and Agent SDK for reviewing, filling, and editing documents.
 
+## Privacy and cookie choices
+
+- [Privacy and cookie choices](https://docxcorp.us/privacy)
+- [Privacy notice as Markdown](https://docxcorp.us/privacy.md)
+- Optional Google Analytics and referral events stay off until a choice on docxcorp.us. DNT and GPC keep them off. Cookie settings are available in every page footer.
+
 ## Reference pages
 
 - [Dataset](${absoluteUrl(routes.dataset())}): schema, coverage, access methods, license

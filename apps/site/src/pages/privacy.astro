@@ -1,0 +1,15 @@
+---
+import WidePageLayout from '../layouts/WidePageLayout.astro';
+import { privacyTitle, privacySections, privacyLinks } from '../lib/privacy-content.mjs';
+---
+<WidePageLayout title={`${privacyTitle} | docxcorp.us`} description="How optional analytics and cookie choices work on docxcorp.us." canonicalPath="/privacy">
+  <article class="site-privacy-page">
+    <a href="/">Back to docxcorp.us</a>
+    <h1>{privacyTitle}</h1>
+    <p>Cookie choices for docxcorp.us.</p>
+    {privacySections.map(section => <section><h2>{section.title}</h2><p>{section.text}</p></section>)}
+    <section id="cookie-settings"><h2>Cookie settings</h2><button type="button" data-consent-open>Open cookie settings</button></section>
+    <ul>{privacyLinks.map(link => <li><a href={link.href}>{link.label}</a></li>)}</ul>
+    <p><a href="/privacy.md">Read this notice as Markdown</a></p>
+  </article>
+</WidePageLayout>

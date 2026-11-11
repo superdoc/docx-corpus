@@ -8,6 +8,7 @@ export const GET: APIRoute = async () => {
 
   const urls = [
     { loc: absoluteUrl(routes.home()), priority: '1.0' },
+    { loc: absoluteUrl('/privacy'), priority: '0.5' },
     { loc: absoluteUrl(routes.dataset()), priority: '0.9' },
     { loc: absoluteUrl(routes.classification()), priority: '0.9' },
     { loc: absoluteUrl(routes.quality()), priority: '0.9' },

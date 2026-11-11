@@ -1,4 +1,6 @@
 ---
+import CookiePreferences from '../components/CookiePreferences.astro';
+import '../styles/consent.css';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import { absoluteUrl } from '../lib/routes';
@@ -37,13 +39,6 @@ const structuredDataJson = structuredData && JSON.stringify(structuredData).repl
 <!doctype html>
 <html lang="en">
   <head>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C9QG5MXVL5"></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag() { dataLayer.push(arguments); }
-      gtag('js', new Date());
-      gtag('config', 'G-C9QG5MXVL5');
-    </script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
@@ -73,6 +68,8 @@ const structuredDataJson = structuredData && JSON.stringify(structuredData).repl
   </head>
   <body class="wide">
     <script>
+      import { installConsentControls } from '../lib/analytics-consent.mjs';
+      installConsentControls({ measurementId: 'G-C9QG5MXVL5', siteHost: 'docxcorp.us' });
       import { installGrowthAttribution } from '../lib/growth-attribution.mjs';
       installGrowthAttribution({ sourceProject: 'docx_corpus', measurementId: 'G-C9QG5MXVL5' });
     </script>
@@ -93,5 +90,7 @@ const structuredDataJson = structuredData && JSON.stringify(structuredData).repl
       <slot />
     </main>
     <Footer />
+    <CookiePreferences />
+    <noscript><p>Optional analytics is off. <a href="/privacy">Read our privacy and cookie choices</a>.</p></noscript>
   </body>
 </html>

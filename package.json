@@ -16,7 +16,7 @@
     "release:cli": "bun run --cwd apps/cli release",
     "setup:extractor": "bun run --cwd packages/extractor setup",
     "prepare": "lefthook install",
-    "test:growth": "node --test tests/growth-attribution.test.mjs"
+    "test:growth": "node --test tests/growth-attribution.test.mjs tests/analytics-consent.test.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",

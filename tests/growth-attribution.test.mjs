@@ -4,7 +4,7 @@ import { analyticsAllowed, classifyDestination, ctaPayload, installGrowthAttribu
 function surface() {
   const calls = [], listeners = new Map();
   const navigation = { prevented: 0, stopped: 0, assigned: 0, replaced: 0 };
-  const win = { location: { hostname: 'ooxml.dev', origin: 'https://ooxml.dev', pathname: '/', href: 'https://ooxml.dev/', assign() { navigation.assigned++; }, replace() { navigation.replaced++; } }, navigator: {}, gtag: (...args) => calls.push(args) };
+  const win = { location: { hostname: 'ooxml.dev', origin: 'https://ooxml.dev', pathname: '/', href: 'https://ooxml.dev/', assign() { navigation.assigned++; }, replace() { navigation.replaced++; } }, navigator: {}, superdocAnalyticsConsent: true, gtag: (...args) => calls.push(args) };
   const doc = {
     addEventListener(name, fn) { if (!listeners.has(name)) listeners.set(name, new Set()); listeners.get(name).add(fn); },
     removeEventListener(name, fn) { const callbacks = listeners.get(name); callbacks?.delete(fn); if (!callbacks?.size) listeners.delete(name); },
@@ -96,5 +96,15 @@ test('a docs install does not turn ordinary in-docs navigation into referral tra
     s.anchor.getAttribute = () => href;
     installGrowthAttribution({ ...s, sourceProject: 'docs', measurementId: 'G-SYNTHETIC' });
     s.dispatch(); assert.equal(s.calls.length, 0);
+  }
+});
+
+test('absent or rejected consent blocks CTA events without changing navigation',()=>{
+  for (const choice of [false,undefined]) {
+    const s=surface(); if(choice===undefined) delete s.win.superdocAnalyticsConsent; else s.win.superdocAnalyticsConsent=choice;
+    assert.equal(analyticsAllowed(s.win,'docx_corpus'),false);
+    installGrowthAttribution({...s,sourceProject:'docx_corpus',measurementId:'G-SYNTHETIC'}); s.dispatch();
+    assert.equal(s.calls.length,0); assert.equal(s.click.defaultPrevented,false);
+    assert.deepEqual(s.navigation,{prevented:0,stopped:0,assigned:0,replaced:0});
   }
 });

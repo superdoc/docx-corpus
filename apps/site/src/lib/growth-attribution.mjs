@@ -11,6 +11,7 @@ const INSTALLED = new WeakMap();
 
 export function analyticsAllowed(win, sourceProject) {
   return Boolean(Object.hasOwn(PROJECTS, sourceProject) && PROJECTS[sourceProject]?.includes(win?.location?.hostname) &&
+    win?.superdocAnalyticsConsent === true &&
     typeof win?.gtag === 'function' &&
     win?.navigator?.globalPrivacyControl !== true &&
     ![win?.navigator?.doNotTrack, win?.doNotTrack].some(value => ['1', 'yes'].includes(String(value).trim().toLowerCase())) &&

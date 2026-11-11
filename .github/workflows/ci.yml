@@ -61,7 +61,5 @@ jobs:
       - name: Build
         run: bun run build
 
-      - name: Build (site)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: bun run --cwd apps/site build
+      - name: Build (site with synthetic local data, no production secrets)
+        run: bun run build:site:fixture

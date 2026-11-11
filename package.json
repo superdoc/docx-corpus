@@ -16,10 +16,12 @@
     "release:cli": "bun run --cwd apps/cli release",
     "setup:extractor": "bun run --cwd packages/extractor setup",
     "prepare": "lefthook install",
-    "test:growth": "node --test tests/growth-attribution.test.mjs tests/analytics-consent.test.mjs"
+    "test:growth": "node --test tests/growth-attribution.test.mjs tests/analytics-consent.test.mjs",
+    "build:site:fixture": "node scripts/build-site-fixture.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.6",
+    "@electric-sql/pglite": "0.5.16",
     "@types/bun": "1.3.10",
     "lefthook": "^1.11.13",
     "typescript": "^6.0.3"

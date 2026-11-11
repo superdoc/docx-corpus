@@ -32,14 +32,19 @@ export function readConsent(win, now = Date.now()) {
 export function publicSurface(location, siteHost) {
 	try {
 		const url = new URL(location.href);
+		// OAuth responses may put credentials in either the query or fragment,
+		// including hash-router callback queries. Inspect decoded parameter names.
+		const fragment = new URLSearchParams(url.hash.slice(1).replace(/^[^?]*\?/, ""));
+		const privateParameter =
+			/^(token|access_token|id_token|refresh_token|client_secret|key|email|auth|session|code|state)$/i;
 		return (
 			url.protocol === "https:" &&
 			[siteHost, "www." + siteHost].includes(url.hostname) &&
 			!url.port &&
+			!url.username &&
+			!url.password &&
 			!/^\/(account|checkout|trial|sign-in|sign-up|auth)(?:\/|$)/.test(url.pathname) &&
-			![...url.searchParams.keys()].some((key) =>
-				/^(token|key|email|auth|session|code|state)$/i.test(key),
-			)
+			![...url.searchParams.keys(), ...fragment.keys()].some((key) => privateParameter.test(key))
 		);
 	} catch {
 		return false;

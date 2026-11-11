@@ -98,3 +98,13 @@ test('a docs install does not turn ordinary in-docs navigation into referral tra
     s.dispatch(); assert.equal(s.calls.length, 0);
   }
 });
+
+test('absent or rejected consent blocks CTA events without changing navigation',()=>{
+  for (const choice of [false,undefined]) {
+    const s=surface(); if(choice===undefined) delete s.win.superdocAnalyticsConsent; else s.win.superdocAnalyticsConsent=choice;
+    assert.equal(analyticsAllowed(s.win,'docx_corpus'),false);
+    installGrowthAttribution({...s,sourceProject:'docx_corpus',measurementId:'G-SYNTHETIC'}); s.dispatch();
+    assert.equal(s.calls.length,0); assert.equal(s.click.defaultPrevented,false);
+    assert.deepEqual(s.navigation,{prevented:0,stopped:0,assigned:0,replaced:0});
+  }
+});

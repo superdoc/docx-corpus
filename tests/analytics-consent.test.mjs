@@ -53,7 +53,7 @@ test('DNT, GPC and explicit opt-out override a stored grant and an attempted new
   }
 });
 test('malformed, future and expired choices fail closed',()=>{
-  for(const value of ['broken','{}',JSON.stringify({version:2,savedAt:0,analytics:true}),JSON.stringify({version:1,savedAt:Date.now()+CONSENT_MAX_AGE,analytics:true}),JSON.stringify({version:1,savedAt:0,analytics:true})]){
+  for(const value of ['broken','{}',JSON.stringify({version:2,savedAt:0,analytics:true}),JSON.stringify({version:1,savedAt:surface().clock()+1,analytics:true}),JSON.stringify({version:1,savedAt:0,analytics:true})]){
     const s=surface();s.storage.set(CONSENT_KEY,value);s.start();assert.equal(s.scripts.length,0);assert.equal(s.win.superdocAnalyticsConsent,false);
   }
 });
@@ -99,4 +99,13 @@ test('accepted visits retain known ecosystem campaigns and only the public refer
 test('blocked cookie storage or script insertion cannot prevent reading the site',()=>{
   const s=surface();Object.defineProperty(s.doc,'cookie',{get(){throw Error('Cookie access blocked');}});assert.doesNotThrow(()=>s.start());assert.equal(s.win.superdocAnalyticsConsent,false);
   const blocked=surface();blocked.doc.head.appendChild=()=>{throw Error('Script insertion blocked');};assert.doesNotThrow(()=>blocked.start().save(true));assert.equal(blocked.win.superdocAnalyticsConsent,false);
+});
+
+test('credential-bearing queries and OAuth fragments cannot load GA, even with a saved grant',()=>{
+  for (const suffix of ['?access_token=secret','?id_token=secret','?ACCESS_TOKEN=secret','?%61ccess_token=secret','#access_token=secret','#id_token=secret','#code=secret&state=secret','#/callback?access_token=secret','?refresh_token=secret','#client_secret=secret']) {
+    const s=surface(); s.win.location.href='https://docxcorp.us/'+suffix; s.saved(true); s.start();
+    assert.equal(s.scripts.length,0,suffix); assert.equal(s.win.superdocAnalyticsConsent,false,suffix);
+  }
+  const s=surface(); s.saved(true); s.start(); s.win.history.replaceState({},'','/#access_token=secret');
+  assert.equal(s.win.location.assigned,'https://docxcorp.us/#access_token=secret'); assert.equal(s.win.superdocAnalyticsConsent,false);
 });
